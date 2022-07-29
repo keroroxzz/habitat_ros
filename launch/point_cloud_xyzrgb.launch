@@ -1,0 +1,13 @@
+<launch>
+    <node pkg="tf" type="static_transform_publisher" name="link1_broadcaster" args="0 0 0 -1.57 0 -1.57 camera_link camera 15" />
+    <node pkg="nodelet" type="nodelet" args="manager"
+            name="nodelet_manager" output="screen"/>
+
+    <node pkg="nodelet" type="nodelet" name="cloudify"
+            args="load depth_image_proc/point_cloud_xyzrgb nodelet_manager">
+        <remap from="depth_registered/image_rect" to="/depth"/>
+        <remap from="depth_registered/points" to="camera/depth_registered/points"/>
+        <remap from="rgb/image_rect_color" to="/image"/>
+        <remap from="rgb/camera_info" to="/camera_info"/>
+    </node>
+</launch>
