@@ -2,85 +2,90 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
+# Bridge to ROS by Brian, Ariel, James.
 
 import os
+import cv2
 import sys
 import time
 import math
+import yaml
 import ctypes
+import numpy as np
 import PIL.Image as PILImage
 from enum import Enum
-import matplotlib.pyplot as plt
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
+# Init settings
 flags = sys.getdlopenflags()
 sys.setdlopenflags(flags | ctypes.RTLD_GLOBAL)
 
-import numpy as np
+# OpeGL GUI
 import magnum as mn
 from magnum.platform.glfw import Application
 
+# habitat
 import habitat_sim
 from habitat_sim import physics
 from habitat_sim.logging import LoggingContext, logger
 from habitat_sim.utils.common import quat_from_angle_axis, quat_to_angle_axis, quat_to_coeffs, quat_from_magnum
 from habitat_sim.utils.common import d3_40_colors_rgb
 
+# ros libs
 import rospy
+import rospkg
+import tf
+
+# ros messages
 from geometry_msgs.msg import Twist
 from sensor_msgs.msg import Image, PointCloud2, CameraInfo
-
-import cv2
 from cv_bridge import CvBridge
-# import open3d as o3d
-import tf
-import yaml
+
+
+bridge = CvBridge()
+pkg_path = rospkg.RosPack().get_path('habitat_ros')
+
+default_scene = "/home/rtu/dataset/habitat/hm3d/hm3d/00009-vLpv2VX547B/vLpv2VX547B.basis.glb"
+default_dataset = "/home/rtu/dataset/habitat/hm3d/hm3d_annotated_basis.scene_dataset_config.json"
+
 
 class HabitatSimInteractiveViewer(Application):
-    def __init__(self, sim_settings: Dict[str, Any]) -> None:
+    def __init__(self, args) -> None:
 
         # add ros node, pub, sub
         rospy.init_node('move_agent', anonymous=True)
         rospy.Subscriber('cmd_vel',Twist, callback=self.callback)
         self.br = tf.TransformBroadcaster()
 
-        self.image_pub = rospy.Publisher("image",Image)
-        self.image_full_pub = rospy.Publisher("image_full",Image)
-        self.depth_pub = rospy.Publisher("depth",Image)
-        self.range_pub = rospy.Publisher("range",Image)
-        self.semantic_pub = rospy.Publisher("semantic",Image)
+        # Ros publisher for sensors
+        self.image_full_pub = rospy.Publisher("image_full", Image, queue_size=1)
+        self.image_pub = rospy.Publisher("image", Image, queue_size=1)
+        self.depth_pub = rospy.Publisher("depth", Image, queue_size=1)
+        self.range_pub = rospy.Publisher("range", Image, queue_size=1)
+        self.semantic_pub = rospy.Publisher("semantic", Image, queue_size=1)
         self.camera_pub = rospy.Publisher("camera_info",CameraInfo, latch=True)
 
-        fname = "/home/rtu/catkin_ws/src/habitat_ros/config/camera.yaml"
-        with open(fname, "r") as fp:
-            calib_data = yaml.load(fp, yaml.Loader)
-        self.camera_info = CameraInfo()
-        self.camera_info.width = sim_settings["width"]
-        self.camera_info.height = sim_settings["height"]
-        self.camera_info.D = calib_data["distortion_coefficients"]["data"]
-        self.camera_info.R = calib_data["rectification_matrix"]["data"]
-        self.camera_info.distortion_model = calib_data["distortion_model"]
-        self.bridge = CvBridge()
+        # Init settings
+        self.camera_info = self.loadCameraYaml(os.path.join(pkg_path, "config/camera.yaml"))
+        self.sim_settings = self.make_sim_settings(args, self.camera_info)
 
+        # application configuration
         configuration = self.Configuration()
         configuration.title = "Habitat Sim Interactive Viewer"
-        configuration.size = mn.Vector2i(sim_settings['viewport_width'],sim_settings['viewport_height'])
+        configuration.size = mn.Vector2i(self.sim_settings['viewport_width'], self.sim_settings['viewport_height'])
         Application.__init__(self, configuration)
         
-        self.sim_settings: Dict[str:Any] = sim_settings
         self.fps: float = 60.0
-        self.count=0
+        self.count = 0
+
         # draw Bullet debug line visualizations (e.g. collision meshes)
         self.debug_bullet_draw = False
         # draw active contact point debug line visualizations
         self.contact_debug_draw = False
         # cache most recently loaded URDF file for quick-reload
         self.cached_urdf = ""
-
         # set proper viewport size
         self.viewport_size: mn.Vector2i = mn.gl.default_framebuffer.viewport.size()
-        # self.sim_settings["width"] = self.viewport_size[0]
-        # self.sim_settings["height"] = self.viewport_size[1]
 
         # set up our movement map
         key = Application.KeyEvent.Key
@@ -130,9 +135,74 @@ class HabitatSimInteractiveViewer(Application):
             self.navmesh_config_and_recompute()
 
         self.time_since_last_simulation = 0.0
-        LoggingContext.reinitialize_from_env()
-        logger.setLevel("INFO")
-        self.print_help_text()
+
+    def loadCameraYaml(self, filename):
+
+        with open(filename, "r") as fp:
+            calib_data = yaml.load(fp, yaml.Loader)
+
+        camera_info = CameraInfo()
+        camera_info.width = calib_data["image_width"]
+        camera_info.height = calib_data["image_height"]
+        camera_info.D = calib_data["distortion_coefficients"]["data"]
+        camera_info.R = calib_data["rectification_matrix"]["data"]
+        camera_info.distortion_model = calib_data["distortion_model"]
+
+        return camera_info
+
+    def make_sim_settings(self, args, camera_info):
+        """
+        This function initialize the simulator setting for configureing the scene
+        """
+        return {
+
+            # size of the window
+            "viewport_width": 500,
+            "viewport_height": 500,
+
+            # size of the sensed image for ROS
+            "width": camera_info.width,
+            "height": camera_info.height,
+
+            "scene": "vLpv2VX547B",
+
+            # must specify the dataset config to include the semantic data
+            "scene_dataset_config_file": args.dataset,
+            "test_scene_data_url": "http://dl.fbaipublicfiles.com/habitat/habitat-test-scenes.zip",
+
+            "default_agent": 0,
+            "robot_height": 1.0,
+            "sensor_height": 1.0,
+            "hfov": 90,
+            "color_sensor": True,  # RGB sensor (default: ON)
+            "semantic_sensor": True,  # semantic sensor (default: OFF)
+            "depth_sensor": True,  # depth sensor (default: OFF)
+            "ortho_rgba_sensor": False,  # Orthographic RGB sensor (default: OFF)
+            "ortho_depth_sensor": False,  # Orthographic depth sensor (default: OFF)
+            "ortho_semantic_sensor": False,  # Orthographic semantic sensor (default: OFF)
+            "fisheye_rgba_sensor": False,
+            "fisheye_depth_sensor": False,
+            "fisheye_semantic_sensor": False,
+            "equirect_rgba_sensor": False,
+            "equirect_depth_sensor": False,
+            "equirect_semantic_sensor": False,
+            "seed": 1,
+            "silent": False,  # do not print log info (default: OFF)
+
+            # settings exclusive to example.py
+            "save_png": False,  # save the pngs to disk (default: OFF)
+            "print_semantic_scene": False,
+            "print_semantic_mask_stats": False,
+            "compute_shortest_path": False,
+            "compute_action_shortest_path": False,
+            "goal_position": [5.047, 0.199, 11.145],
+            "enable_physics": not args.disable_physics,
+            "enable_gfx_replay_save": False,
+            "physics_config_file": "./data/default.physics_config.json",
+            "num_objects": 10,
+            "test_object_index": 0,
+            "frustum_culling": True,
+        }
 
     ## Utils
     def y_up2z_up(self, position, rotation):
@@ -148,15 +218,14 @@ class HabitatSimInteractiveViewer(Application):
         return np.asarray([translation.x, translation.y, translation.z])
 
     def getCameraMatrix(self, camera):
-        focal = sim_settings["width"] / 2.0 * camera.projection_matrix[0,0]
-        K = [focal, 0, sim_settings["width"]/2.0, 0, focal, sim_settings["height"]/2.0, 0, 0, 1.0]
-        P = [focal, 0, sim_settings["width"]/2.0, 0, 0, focal, sim_settings["height"]/2.0, 0, 0, 0, 1.0, 0.0]
+        focal = self.camera_info.width / 2.0 * camera.projection_matrix[0,0]
+        K = [focal, 0, self.camera_info.width/2.0, 0, focal, self.camera_info.height/2.0, 0, 0, 1.0]
+        P = [focal, 0, self.camera_info.width/2.0, 0, 0, focal, self.camera_info.height/2.0, 0, 0, 0, 1.0, 0.0]
         return K, P
 
     def callback(self, msg):
         if msg.linear.x > 0:
             action = "move_forward"
-
         elif msg.linear.x < 0:
             action = "move_backward"
         elif msg.linear.y > 0:
@@ -214,6 +283,9 @@ class HabitatSimInteractiveViewer(Application):
             self.draw_contact_debug()
 
     def toNumpy(self, semantic_obs):
+        """
+        Translate the semantic label into RGB image for publishing
+        """
         semantic_img = PILImage.new("P", (semantic_obs.shape[1], semantic_obs.shape[0]))
         semantic_img.putpalette(d3_40_colors_rgb.flatten())
         semantic_img.putdata((semantic_obs.flatten() % 40).astype(np.uint8))
@@ -260,7 +332,6 @@ class HabitatSimInteractiveViewer(Application):
                 self.time_since_last_simulation, 1.0 / self.fps
             )
 
-        keys = active_agent_id_and_sensor_name
         self.observations = self.sim.get_sensor_observations()
 
         self.count+=1
@@ -288,11 +359,11 @@ class HabitatSimInteractiveViewer(Application):
             self.range = self.observations['range_sensor']
             self.semantic = self.toNumpy(self.observations['semantic_sensor'])
             
-            cv_bgr = self.bridge.cv2_to_imgmsg(self.bgr, encoding="bgr8")
-            cv_bgr_full = self.bridge.cv2_to_imgmsg(self.bgr_full, encoding="bgr8")
-            cv_depth = self.bridge.cv2_to_imgmsg(self.depth, encoding="passthrough")
-            cv_range = self.bridge.cv2_to_imgmsg(self.range, encoding="passthrough")
-            cv_semantic = self.bridge.cv2_to_imgmsg(self.semantic, encoding="8UC4")
+            cv_bgr = bridge.cv2_to_imgmsg(self.bgr, encoding="bgr8")
+            cv_bgr_full = bridge.cv2_to_imgmsg(self.bgr_full, encoding="bgr8")
+            cv_depth = bridge.cv2_to_imgmsg(self.depth, encoding="passthrough")
+            cv_range = bridge.cv2_to_imgmsg(self.range, encoding="passthrough")
+            cv_semantic = bridge.cv2_to_imgmsg(self.semantic, encoding="8UC4")
 
             cv_bgr.header.stamp = msg_time
             cv_bgr.header.frame_id = "camera"
@@ -310,13 +381,6 @@ class HabitatSimInteractiveViewer(Application):
             self.range_pub.publish(cv_range)
             self.semantic_pub.publish(cv_semantic)
             self.camera_pub.publish(self.camera_info)
-
-        ### No need to draw observation and the agent was already retrived in reconfigure_sim
-        # self.sim._Simulator__sensors[keys[0]][keys[1]].draw_observation()
-        # agent = self.sim.get_agent(keys[0])
-
-        ### self.render_camera was already retrived in _init_
-        # self.render_camera = agent.scene_node.node_sensor_suite.get(keys[1])
 
         self.debug_draw()
         self.render_camera.render_target.blit_rgba_to_default()
@@ -364,7 +428,7 @@ class HabitatSimInteractiveViewer(Application):
         ].sensor_specifications
 
         agent_config = habitat_sim.agent.AgentConfiguration(
-            height=sim_settings['robot_height'],
+            height=self.sim_settings['robot_height'],
             radius=0.1,
             sensor_specifications=sensor_spec,
             action_space=action_space,
@@ -424,13 +488,13 @@ class HabitatSimInteractiveViewer(Application):
         range_sensor_spec.sensor_subtype = habitat_sim.SensorSubType.EQUIRECTANGULAR
         sensor_specs.append(range_sensor_spec)
 
-        lidar_sensor_spec = habitat_sim.EquirectangularSensorSpec()
-        lidar_sensor_spec.uuid = "lidar_sensor"
-        lidar_sensor_spec.sensor_type = habitat_sim.SensorType.DEPTH
-        lidar_sensor_spec.resolution = [360, 360]
-        lidar_sensor_spec.position = [0.0, settings["sensor_height"], 0.0]
-        lidar_sensor_spec.sensor_subtype = habitat_sim.SensorSubType.EQUIRECTANGULAR
-        sensor_specs.append(lidar_sensor_spec)
+        laser_sensor_spec = habitat_sim.EquirectangularSensorSpec()
+        laser_sensor_spec.uuid = "laser_sensor"
+        laser_sensor_spec.sensor_type = habitat_sim.SensorType.DEPTH
+        laser_sensor_spec.resolution = [360, 360]
+        laser_sensor_spec.position = [0.0, settings["sensor_height"], 0.0]
+        laser_sensor_spec.sensor_subtype = habitat_sim.SensorSubType.EQUIRECTANGULAR
+        sensor_specs.append(laser_sensor_spec)
 
         # Here you can specify the amount of displacement in a forward action and the turn angle
         agent_cfg = habitat_sim.agent.AgentConfiguration()
@@ -467,9 +531,9 @@ class HabitatSimInteractiveViewer(Application):
         self.sensor_depth = self.agent_body_node.node_sensor_suite.get("depth_sensor")
         self.sensor_semantic = self.agent_body_node.node_sensor_suite.get("semantic_sensor")
         self.sensor_range = self.agent_body_node.node_sensor_suite.get("range_sensor")
-        self.sensor_lidar = self.agent_body_node.node_sensor_suite.get("lidar_sensor")
+        self.sensor_lidar = self.agent_body_node.node_sensor_suite.get("laser_sensor")
 
-        self.tiltable_sensors = [self.render_camera, self.sensor_camera, self.sensor_depth, self.sensor_semantic]
+        self.camera_set = [self.render_camera, self.sensor_camera, self.sensor_depth, self.sensor_semantic]
 
         # set sim_settings scene name as actual loaded scene
         self.sim_settings["scene"] = self.sim.curr_scene_name
@@ -529,9 +593,6 @@ class HabitatSimInteractiveViewer(Application):
             event.accepted = True
             self.exit_event(Application.ExitEvent)
             return
-
-        elif key == pressed.H:
-            self.print_help_text()
 
         elif key == pressed.TAB:
             # NOTE: (+ALT) - reconfigure without cycling scenes
@@ -700,7 +761,7 @@ class HabitatSimInteractiveViewer(Application):
             # up/down on cameras' scene nodes
             action = habitat_sim.agent.ObjectControls()
             sensors = list(self.agent_body_node.subtree_sensors.values())
-            [action(s.object, "look_down", act_spec(delta.y), False) for s in self.tiltable_sensors]
+            [action(s.object, "look_down", act_spec(delta.y), False) for s in self.camera_set]
 
         # if interactive mode is TRUE -> GRAB MODE
         elif self.mouse_interaction == MouseMode.GRAB and self.mouse_grabber:
@@ -934,66 +995,6 @@ class HabitatSimInteractiveViewer(Application):
         event.accepted = True
         exit(0)
 
-    def print_help_text(self) -> None:
-        """
-        Print the Key Command help text.
-        """
-        logger.info(
-            """
-=====================================================
-Welcome to the Habitat-sim Python Viewer application!
-=====================================================
-Mouse Functions ('m' to toggle mode):
-----------------
-In LOOK mode (default):
-    LEFT:
-        Click and drag to rotate the agent and look up/down.
-    WHEEL:
-        Modify orthographic camera zoom/perspective camera FOV (+SHIFT for fine grained control)
-
-In GRAB mode (with 'enable-physics'):
-    LEFT:
-        Click and drag to pickup and move an object with a point-to-point constraint (e.g. ball joint).
-    RIGHT:
-        Click and drag to pickup and move an object with a fixed frame constraint.
-    WHEEL (with picked object):
-        default - Pull gripped object closer or push it away.
-        (+ALT) rotate object fixed constraint frame (yaw)
-        (+CTRL) rotate object fixed constraint frame (pitch)
-        (+ALT+CTRL) rotate object fixed constraint frame (roll)
-        (+SHIFT) amplify scroll magnitude
-
-
-Key Commands:
--------------
-    esc:        Exit the application.
-    'h':        Display this help message.
-    'm':        Cycle mouse interaction modes.
-
-    Agent Controls:
-    'wasd':     Move the agent's body forward/backward and left/right.
-    'zx':       Move the agent's body up/down.
-    arrow keys: Turn the agent's body left/right and camera look up/down.
-
-    Utilities:
-    'r':        Reset the simulator with the most recently loaded scene.
-    'n':        Show/hide NavMesh wireframe.
-                (+SHIFT) Recompute NavMesh with default settings.
-                (+ALT) Re-sample the agent(camera)'s position and orientation from the NavMesh.
-    ',':        Render a Bullet collision shape debug wireframe overlay (white=active, green=sleeping, blue=wants sleeping, red=can't sleep).
-    'c':        Run a discrete collision detection pass and render a debug wireframe overlay showing active contact points and normals (yellow=fixed length normals, red=collision distances).
-                (+SHIFT) Toggle the contact point debug render overlay on/off.
-
-    Object Interactions:
-    SPACE:      Toggle physics simulation on/off.
-    '.':        Take a single simulation step if not simulating continuously.
-    'v':        (physics) Invert gravity.
-    't':        Load URDF from filepath
-                (+SHIFT) quick re-load the previously specified URDF
-                (+ALT) load the URDF with fixed base
-=====================================================
-"""
-        )
 
 class MouseMode(Enum):
     LOOK = 0
@@ -1116,13 +1117,13 @@ if __name__ == "__main__":
     # optional arguments
     parser.add_argument(
         "--scene",
-        default="/home/rtu/dataset/habitat/hm3d/hm3d/00009-vLpv2VX547B/vLpv2VX547B.basis.glb",
+        default=default_scene,
         type=str,
         help='scene/stage file to load (default: "NONE")',
     )
     parser.add_argument(
         "--dataset",
-        default="default",
+        default=default_dataset,
         type=str,
         metavar="DATASET",
         help="dataset configuration file to use (default: default)",
@@ -1135,54 +1136,4 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    # Setting up sim_settings
-    sim_settings: Dict[str, Any] = {
-        
-        # size of the window
-        "viewport_width": 500,
-        "viewport_height": 500,
-
-        # size of the sensed image for ROS
-        "width": 224,
-        "height": 224,
-
-        "scene": args.scene,
-        # must specify the dataset config to include the semantic data
-        "scene_dataset_config_file": "/home/rtu/dataset/habitat/hm3d/hm3d_annotated_basis.scene_dataset_config.json",
-        "test_scene_data_url": "http://dl.fbaipublicfiles.com/habitat/habitat-test-scenes.zip",
-
-        "default_agent": 0,
-        "robot_height": 1.0,
-        "sensor_height": 1.0,
-        "hfov": 90,
-        "color_sensor": True,  # RGB sensor (default: ON)
-        "semantic_sensor": True,  # semantic sensor (default: OFF)
-        "depth_sensor": True,  # depth sensor (default: OFF)
-        "ortho_rgba_sensor": False,  # Orthographic RGB sensor (default: OFF)
-        "ortho_depth_sensor": False,  # Orthographic depth sensor (default: OFF)
-        "ortho_semantic_sensor": False,  # Orthographic semantic sensor (default: OFF)
-        "fisheye_rgba_sensor": False,
-        "fisheye_depth_sensor": False,
-        "fisheye_semantic_sensor": False,
-        "equirect_rgba_sensor": False,
-        "equirect_depth_sensor": False,
-        "equirect_semantic_sensor": False,
-        "seed": 1,
-        "silent": False,  # do not print log info (default: OFF)
-
-        # settings exclusive to example.py
-        "save_png": False,  # save the pngs to disk (default: OFF)
-        "print_semantic_scene": False,
-        "print_semantic_mask_stats": False,
-        "compute_shortest_path": False,
-        "compute_action_shortest_path": False,
-        "goal_position": [5.047, 0.199, 11.145],
-        "enable_physics": not args.disable_physics,
-        "enable_gfx_replay_save": False,
-        "physics_config_file": "./data/default.physics_config.json",
-        "num_objects": 10,
-        "test_object_index": 0,
-        "frustum_culling": True,
-    }
-
-    HabitatSimInteractiveViewer(sim_settings).exec()
+    HabitatSimInteractiveViewer(args).exec()

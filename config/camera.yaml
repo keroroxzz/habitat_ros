@@ -1,10 +1,13 @@
-image_width: 800
-image_height: 600
+# The camera discription file of the robot in habitat
+# Note that the width, height, camera_matrix and projection_matrix are
+# currently not used and will be overwitten in the program
+
+image_width: 640
+image_height: 480
 camera_name: camera
 camera_matrix:
   rows: 3
   cols: 3
-  # data: [322.0704122808738, 0, 199.2680620421962, 0, 320.8673986158544, 155.2533082600705, 0, 0, 1]
   data: [300, 0, 300, 0, 400, 400, 0, 0, 1]
 distortion_model: plumb_bob
 distortion_coefficients: 
@@ -18,5 +21,4 @@ rectification_matrix:
 projection_matrix:
   rows: 3
   cols: 4
-  # data: [329.2483825683594, 0, 198.4101510452074, 0, 0, 329.1044006347656, 155.5057121208347, 0, 0, 0, 1, 0]
   data: [300, 0, 300, 0, 0, 400, 400, 0, 0, 0, 1, 0]
