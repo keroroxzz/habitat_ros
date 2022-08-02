@@ -45,8 +45,8 @@ from cv_bridge import CvBridge
 bridge = CvBridge()
 pkg_path = rospkg.RosPack().get_path('habitat_ros')
 
-default_scene = "/home/rtu/dataset/habitat/hm3d/hm3d/00009-vLpv2VX547B/vLpv2VX547B.basis.glb"
-default_dataset = "/home/rtu/dataset/habitat/hm3d/hm3d_annotated_basis.scene_dataset_config.json"
+default_scene = "/home/ariel/Datasets/Habitat/hm3d/hm3d-train-habitat/00009-vLpv2VX547B/vLpv2VX547B.basis.glb"
+default_dataset = "/home/ariel/Datasets/Habitat/hm3d/hm3d_annotated_basis.scene_dataset_config.json"
 
 
 class HabitatSimInteractiveViewer(Application):
@@ -62,6 +62,7 @@ class HabitatSimInteractiveViewer(Application):
         self.image_pub = rospy.Publisher("image", Image, queue_size=1)
         self.depth_pub = rospy.Publisher("depth", Image, queue_size=1)
         self.range_pub = rospy.Publisher("range", Image, queue_size=1)
+        self.laser_pub = rospy.Publisher("laser", Image, queue_size=1)
         self.semantic_pub = rospy.Publisher("semantic", Image, queue_size=1)
         self.camera_pub = rospy.Publisher("camera_info",CameraInfo, latch=True)
 
@@ -164,7 +165,7 @@ class HabitatSimInteractiveViewer(Application):
             "width": camera_info.width,
             "height": camera_info.height,
 
-            "scene": "vLpv2VX547B",
+            "scene": args.scene,    
 
             # must specify the dataset config to include the semantic data
             "scene_dataset_config_file": args.dataset,
@@ -357,12 +358,14 @@ class HabitatSimInteractiveViewer(Application):
             self.bgr_full = self.observations['color_render'][...,0:3][...,::-1]
             self.depth = self.observations['depth_sensor']
             self.range = self.observations['range_sensor']
+            self.laser = self.observations['laser_sensor']
             self.semantic = self.toNumpy(self.observations['semantic_sensor'])
             
             cv_bgr = bridge.cv2_to_imgmsg(self.bgr, encoding="bgr8")
             cv_bgr_full = bridge.cv2_to_imgmsg(self.bgr_full, encoding="bgr8")
             cv_depth = bridge.cv2_to_imgmsg(self.depth, encoding="passthrough")
             cv_range = bridge.cv2_to_imgmsg(self.range, encoding="passthrough")
+            cv_laser = bridge.cv2_to_imgmsg(self.laser, encoding="passthrough")
             cv_semantic = bridge.cv2_to_imgmsg(self.semantic, encoding="8UC4")
 
             cv_bgr.header.stamp = msg_time
@@ -370,6 +373,7 @@ class HabitatSimInteractiveViewer(Application):
             cv_bgr_full.header = cv_bgr.header
             cv_depth.header = cv_bgr.header
             cv_range.header = cv_bgr.header
+            cv_laser.header = cv_bgr.header
             cv_semantic.header = cv_bgr.header
 
             self.camera_info.K, self.camera_info.P = self.getCameraMatrix(self.sensor_camera.render_camera)
@@ -379,6 +383,7 @@ class HabitatSimInteractiveViewer(Application):
             self.image_full_pub.publish(cv_bgr_full)
             self.depth_pub.publish(cv_depth)
             self.range_pub.publish(cv_range)
+            self.laser_pub.publish(cv_laser)
             self.semantic_pub.publish(cv_semantic)
             self.camera_pub.publish(self.camera_info)
 
