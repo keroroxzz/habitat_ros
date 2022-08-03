@@ -1,0 +1,16 @@
+<launch>
+  <arg name="scene" default="/home/rtu/dataset/habitat/hm3d/hm3d/00009-vLpv2VX547B/vLpv2VX547B.basis.glb"/>
+  <arg name="dataset" default="/home/rtu/dataset/habitat/hm3d/hm3d_annotated_basis.scene_dataset_config.json"/>
+  
+  <param name="habitat_scene" type="str" value="$(arg scene)" />
+  <param name="habitat_dataset" type="str" value="$(arg dataset)" />
+  
+  <param name="habitat_camera" type="yaml" command="cat '$(find habitat_ros)/config/camera.yaml'" />
+
+  <node pkg="tf" type="static_transform_publisher" name="laserscan_broadcaster" args="0 0 1.0 0 0 0 robot LaserScan 15" />
+  <node pkg="tf" type="static_transform_publisher" name="LiDAR_broadcaster" args="0 0 1.0 0 0 0 robot lidar 15" />
+  <node pkg="tf" type="static_transform_publisher" name="link1_broadcaster" args="0 0 0 -1.57 0 -1.57 camera_link camera 15" />
+    
+  <node pkg="habitat_ros" type="simulator.py" name="habitat_simulator" args="--scene $(arg scene) --dataset $(arg dataset)" />
+
+</launch>

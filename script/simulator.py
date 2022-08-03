@@ -2,7 +2,7 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
-# Bridge to ROS by Brian, Ariel, James.
+# Bridge to ROS by Brian, Ariel, and James.
 
 import os
 import cv2
@@ -16,7 +16,7 @@ import PIL.Image as PILImage
 from enum import Enum
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
-# Init settings
+# Init settings, MUST be placed before importing the magnum
 flags = sys.getdlopenflags()
 sys.setdlopenflags(flags | ctypes.RTLD_GLOBAL)
 
@@ -27,7 +27,7 @@ from magnum.platform.glfw import Application
 # habitat
 import habitat_sim
 from habitat_sim import physics
-from habitat_sim.logging import LoggingContext, logger
+from habitat_sim.logging import logger
 from habitat_sim.utils.common import quat_from_angle_axis, quat_to_angle_axis, quat_to_coeffs, quat_from_magnum
 from habitat_sim.utils.common import d3_40_colors_rgb
 
@@ -38,19 +38,93 @@ import tf
 
 # ros messages
 from geometry_msgs.msg import Twist
-from sensor_msgs.msg import Image, PointCloud2, CameraInfo
+from sensor_msgs.msg import Image, CameraInfo
+from habitat_ros.msg import LiDARINFO
 from cv_bridge import CvBridge
-
 
 bridge = CvBridge()
 pkg_path = rospkg.RosPack().get_path('habitat_ros')
 
-default_scene = "/home/ariel/Datasets/Habitat/hm3d/hm3d-train-habitat/00009-vLpv2VX547B/vLpv2VX547B.basis.glb"
-default_dataset = "/home/ariel/Datasets/Habitat/hm3d/hm3d_annotated_basis.scene_dataset_config.json"
+default_scene = "/home/rtu/dataset/habitat/hm3d/hm3d/00009-vLpv2VX547B/vLpv2VX547B.basis.glb"
+default_dataset = "/home/rtu/dataset/habitat/hm3d/hm3d_annotated_basis.scene_dataset_config.json"
+enable_physic = True
+
+class LiDAR:
+    def __init__(self, uuid, sensor_position, yaml_file):
+
+        self.img_pub = rospy.Publisher("range", Image, queue_size=1)
+        self.info_pub = rospy.Publisher("lidar_info", LiDARINFO, queue_size=10)
+
+        rospy.sleep(1)
+
+        self.uuid = uuid
+        self.position = sensor_position
+        self.loadFromFile(os.path.join(pkg_path, yaml_file))
+        self._init_params()
+
+
+    def loadFromFile(self, filename):
+
+        with open(filename, "r") as fp:
+            lidar_data = yaml.load(fp, yaml.Loader)
+
+        self.far = lidar_data["far"]
+        self.near = lidar_data["near"]
+        self.vfov = lidar_data["vfov"]
+        self.hfov = lidar_data["hfov"]
+        self.vres = lidar_data["resolution"]["vertical"]
+        self.hres = lidar_data["resolution"]["horizontal"]
+        self.accuracy = lidar_data["accuracy"]
+        self.rate = lidar_data["rate"]
+
+        self.lidar_info = LiDARINFO()
+        self.lidar_info.far = self.far
+        self.lidar_info.near = self.near
+        self.lidar_info.vfov = self.vfov
+        self.lidar_info.hfov = self.hfov
+        self.lidar_info.vertical_res = self.vres
+        self.lidar_info.horizontal_res = self.hres
+        self.lidar_info.rate = self.rate
+        self.lidar_info.accuracy = self.accuracy
+        self.info_pub.publish(self.lidar_info)
+
+    def _init_params(self):
+
+        self.res_v = int(self.vres/self.vfov*180)
+        self.res_h = int(self.hres/self.hfov*360)
+
+        self.v_bound = int((self.res_v - self.vres)/2)
+        self.h_bound = int((self.res_h - self.hres)/2)
+
+    def uuid(self):
+        return self.uuid
+
+    def getEquRectResolution(self):
+
+        return [self.res_v, self.res_h]
+
+    def getSensorSpec(self):
+
+        range_sensor_spec = habitat_sim.EquirectangularSensorSpec()
+        range_sensor_spec.uuid = self.uuid
+        range_sensor_spec.far = self.far
+        range_sensor_spec.near = self.near
+        range_sensor_spec.resolution = self.getEquRectResolution()
+        range_sensor_spec.position = self.position
+        range_sensor_spec.sensor_type = habitat_sim.SensorType.DEPTH
+        range_sensor_spec.sensor_subtype = habitat_sim.SensorSubType.EQUIRECTANGULAR
+
+        return range_sensor_spec
+
+    def publish(self, eqrect):
+
+        crop = eqrect[self.v_bound:self.v_bound+self.vres, self.h_bound:self.h_bound+self.hres]
+        img_msg = bridge.cv2_to_imgmsg(crop, encoding="passthrough")
+        self.img_pub.publish(img_msg)
 
 
 class HabitatSimInteractiveViewer(Application):
-    def __init__(self, args) -> None:
+    def __init__(self) -> None:
 
         # add ros node, pub, sub
         rospy.init_node('move_agent', anonymous=True)
@@ -67,8 +141,9 @@ class HabitatSimInteractiveViewer(Application):
         self.camera_pub = rospy.Publisher("camera_info",CameraInfo, latch=True)
 
         # Init settings
-        self.camera_info = self.loadCameraYaml(os.path.join(pkg_path, "config/camera.yaml"))
-        self.sim_settings = self.make_sim_settings(args, self.camera_info)
+        self.camera_info = self.loadCameraYaml("config/camera.yaml")
+        self.sim_settings = self.make_sim_settings(self.camera_info)
+        self.lidar = LiDAR("range_sensor", [0.0, self.sim_settings["sensor_height"], 0.0],"config/VLP_16.yaml")
 
         # application configuration
         configuration = self.Configuration()
@@ -137,8 +212,25 @@ class HabitatSimInteractiveViewer(Application):
 
         self.time_since_last_simulation = 0.0
 
+
+    ## Setting loading functions ##
+    def loadLiDARYaml(self, filename):
+
+        with open(filename, "r") as fp:
+            lidar_data = yaml.load(fp, yaml.Loader)
+
+        camera_info = CameraInfo()
+        camera_info.width = lidar_data["vfov"]
+        camera_info.height = lidar_data["hfov"]
+        camera_info.D = lidar_data["channels"]
+        camera_info.R = lidar_data["accuracy"]
+        camera_info.distortion_model = lidar_data["rate"]
+
+        return camera_info
+
     def loadCameraYaml(self, filename):
 
+        filename = os.path.join(pkg_path, filename)
         with open(filename, "r") as fp:
             calib_data = yaml.load(fp, yaml.Loader)
 
@@ -151,10 +243,17 @@ class HabitatSimInteractiveViewer(Application):
 
         return camera_info
 
-    def make_sim_settings(self, args, camera_info):
+
+    ## Simulation configuratrion and setting functions ##
+    def make_sim_settings(self, camera_info):
         """
         This function initialize the simulator setting for configureing the scene
         """
+
+        dataset = rospy.get_param("habitat_dataset", default=default_dataset)
+        scene = rospy.get_param("habitat_scene", default=default_scene)
+        enable_physic = rospy.get_param("enable_physic", default=True)
+        
         return {
 
             # size of the window
@@ -165,10 +264,10 @@ class HabitatSimInteractiveViewer(Application):
             "width": camera_info.width,
             "height": camera_info.height,
 
-            "scene": args.scene,    
+            "scene": scene,
 
             # must specify the dataset config to include the semantic data
-            "scene_dataset_config_file": args.dataset,
+            "scene_dataset_config_file": dataset,
             "test_scene_data_url": "http://dl.fbaipublicfiles.com/habitat/habitat-test-scenes.zip",
 
             "default_agent": 0,
@@ -197,7 +296,7 @@ class HabitatSimInteractiveViewer(Application):
             "compute_shortest_path": False,
             "compute_action_shortest_path": False,
             "goal_position": [5.047, 0.199, 11.145],
-            "enable_physics": not args.disable_physics,
+            "enable_physics": enable_physic,
             "enable_gfx_replay_save": False,
             "physics_config_file": "./data/default.physics_config.json",
             "num_objects": 10,
@@ -205,8 +304,12 @@ class HabitatSimInteractiveViewer(Application):
             "frustum_culling": True,
         }
 
-    ## Utils
+
+    ## Utils ##
     def y_up2z_up(self, position, rotation):
+        """
+        Transfrom the coordinate to z-up
+        """
         position = position[(2,0,1),]
         position[:2] *= -1.0
         theta, w = quat_to_angle_axis(rotation)
@@ -216,14 +319,32 @@ class HabitatSimInteractiveViewer(Application):
         return position, rotation
 
     def nodeTranslationToNumpy(self, translation):
+        """
+        Translate the translation of node into nparray
+        """
         return np.asarray([translation.x, translation.y, translation.z])
 
     def getCameraMatrix(self, camera):
+        """
+        Calculate the camera metrix for projection
+        """
         focal = self.camera_info.width / 2.0 * camera.projection_matrix[0,0]
         K = [focal, 0, self.camera_info.width/2.0, 0, focal, self.camera_info.height/2.0, 0, 0, 1.0]
         P = [focal, 0, self.camera_info.width/2.0, 0, 0, focal, self.camera_info.height/2.0, 0, 0, 0, 1.0, 0.0]
         return K, P
 
+    def toNumpy(self, semantic_obs):
+        """
+        Translate the semantic label into RGB image for publishing
+        """
+        semantic_img = PILImage.new("P", (semantic_obs.shape[1], semantic_obs.shape[0]))
+        semantic_img.putpalette(d3_40_colors_rgb.flatten())
+        semantic_img.putdata((semantic_obs.flatten() % 40).astype(np.uint8))
+        semantic_img = semantic_img.convert("RGBA")
+        return np.array(semantic_img)
+
+
+    ## ROS callback ##
     def callback(self, msg):
         if msg.linear.x > 0:
             action = "move_forward"
@@ -238,6 +359,8 @@ class HabitatSimInteractiveViewer(Application):
         agent.act(action) 
         self.sim.step_world(1.0)
 
+
+    ## Magnum GUI rendering functions ##
     def draw_contact_debug(self):
         """
         This method is called to render a debug line overlay displaying active contact points and normals.
@@ -282,16 +405,6 @@ class HabitatSimInteractiveViewer(Application):
             self.sim.physics_debug_draw(proj_mat)
         if self.contact_debug_draw:
             self.draw_contact_debug()
-
-    def toNumpy(self, semantic_obs):
-        """
-        Translate the semantic label into RGB image for publishing
-        """
-        semantic_img = PILImage.new("P", (semantic_obs.shape[1], semantic_obs.shape[0]))
-        semantic_img.putpalette(d3_40_colors_rgb.flatten())
-        semantic_img.putdata((semantic_obs.flatten() % 40).astype(np.uint8))
-        semantic_img = semantic_img.convert("RGBA")
-        return np.array(semantic_img)
 
     def draw_event(
         self,
@@ -364,16 +477,16 @@ class HabitatSimInteractiveViewer(Application):
             cv_bgr = bridge.cv2_to_imgmsg(self.bgr, encoding="bgr8")
             cv_bgr_full = bridge.cv2_to_imgmsg(self.bgr_full, encoding="bgr8")
             cv_depth = bridge.cv2_to_imgmsg(self.depth, encoding="passthrough")
-            cv_range = bridge.cv2_to_imgmsg(self.range, encoding="passthrough")
             cv_laser = bridge.cv2_to_imgmsg(self.laser, encoding="passthrough")
+            # cv_range = bridge.cv2_to_imgmsg(self.range, encoding="passthrough")
             cv_semantic = bridge.cv2_to_imgmsg(self.semantic, encoding="8UC4")
 
             cv_bgr.header.stamp = msg_time
             cv_bgr.header.frame_id = "camera"
             cv_bgr_full.header = cv_bgr.header
             cv_depth.header = cv_bgr.header
-            cv_range.header = cv_bgr.header
             cv_laser.header = cv_bgr.header
+            # cv_range.header = cv_bgr.header
             cv_semantic.header = cv_bgr.header
 
             self.camera_info.K, self.camera_info.P = self.getCameraMatrix(self.sensor_camera.render_camera)
@@ -382,10 +495,11 @@ class HabitatSimInteractiveViewer(Application):
             self.image_pub.publish(cv_bgr)
             self.image_full_pub.publish(cv_bgr_full)
             self.depth_pub.publish(cv_depth)
-            self.range_pub.publish(cv_range)
+            # self.range_pub.publish(cv_range)
             self.laser_pub.publish(cv_laser)
             self.semantic_pub.publish(cv_semantic)
             self.camera_pub.publish(self.camera_info)
+            self.lidar.publish(self.range)
 
         self.debug_draw()
         self.render_camera.render_target.blit_rgba_to_default()
@@ -485,13 +599,7 @@ class HabitatSimInteractiveViewer(Application):
         semantic_sensor_spec.sensor_subtype = habitat_sim.SensorSubType.PINHOLE
         sensor_specs.append(semantic_sensor_spec)
 
-        range_sensor_spec = habitat_sim.EquirectangularSensorSpec()
-        range_sensor_spec.uuid = "range_sensor"
-        range_sensor_spec.sensor_type = habitat_sim.SensorType.DEPTH
-        range_sensor_spec.resolution = [360, 360]
-        range_sensor_spec.position = [0.0, settings["sensor_height"], 0.0]
-        range_sensor_spec.sensor_subtype = habitat_sim.SensorSubType.EQUIRECTANGULAR
-        sensor_specs.append(range_sensor_spec)
+        sensor_specs.append(self.lidar.getSensorSpec())
 
         laser_sensor_spec = habitat_sim.EquirectangularSensorSpec()
         laser_sensor_spec.uuid = "laser_sensor"
@@ -1115,30 +1223,5 @@ class Timer:
 
 
 if __name__ == "__main__":
-    import argparse
 
-    parser = argparse.ArgumentParser()
-
-    # optional arguments
-    parser.add_argument(
-        "--scene",
-        default=default_scene,
-        type=str,
-        help='scene/stage file to load (default: "NONE")',
-    )
-    parser.add_argument(
-        "--dataset",
-        default=default_dataset,
-        type=str,
-        metavar="DATASET",
-        help="dataset configuration file to use (default: default)",
-    )
-    parser.add_argument(
-        "--disable_physics",
-        action="store_true",
-        help="disable physics simulation (default: False)",
-    )
-
-    args = parser.parse_args()
-
-    HabitatSimInteractiveViewer(args).exec()
+    HabitatSimInteractiveViewer().exec()

@@ -6,5 +6,13 @@
     "python.analysis.extraPaths": [
         "/home/rtu/catkin_ws/devel/lib/python3/dist-packages",
         "/opt/ros/noetic/lib/python3/dist-packages"
-    ]
+    ],
+    "files.associations": {
+        "iostream": "cpp",
+        "cmath": "cpp",
+        "complex": "cpp",
+        "new": "cpp",
+        "chrono": "cpp",
+        "vector": "cpp"
+    }
 }
