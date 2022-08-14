@@ -3,14 +3,14 @@
 semantic_camera:
   type: "Semantic_Camera"
   name: "semantic_camera"
-  frame: "camera"
-  topic: "semantic"
+  frame: "/camera"
+  topic: "/semantic"
   publish_transfromation: False
   position: [0.1, 0.0, 0.75]
 
   # actuation topics and corresponding actions
   actuation:
-    topics: ["camera/tilt"]
+    topics: ["/camera/tilt"]
     actions: ["look_up"]
 
   sensor_info:

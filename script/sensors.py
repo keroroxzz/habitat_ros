@@ -8,6 +8,7 @@ from typing import Dict, List
 
 
 # habitat
+# import magnum as mn
 import habitat_sim
 from habitat_sim.utils.common import quat_from_angle_axis, quat_to_angle_axis, quat_to_coeffs, quat_from_magnum
 from habitat_sim.utils.common import d3_40_colors_rgb
@@ -308,11 +309,12 @@ class Robot(ControllableObject):
 
         # load the robot asset
         template_id = obj_templates_mgr.load_configs(self.model_path)[0]
-        model = rigid_obj_mgr.add_object_by_template_id(template_id, self.node)
-        model.translation = self.model_translation
+        self.model = rigid_obj_mgr.add_object_by_template_id(template_id, self.node)
+        self.model.translation = self.model_translation
         # model.rotation = self.model_rotation
-
-        self.vel_control = model.velocity_control
+        
+        # using the vel controller 
+        self.vel_control = self.model.velocity_control
         self.vel_control.controlling_lin_vel = True
         self.vel_control.controlling_ang_vel = True
         self.vel_control.lin_vel_is_local = True
@@ -344,6 +346,11 @@ class Robot(ControllableObject):
 
         self.vel_control.linear_velocity = lin_vel
         self.vel_control.angular_velocity = ang_vel
+
+        # Neet to transform to the local coordinate
+        # lin_vel *= -50.0
+        # self.model.apply_force(force=mn.Vector3(lin_vel[0], lin_vel[1], lin_vel[2]), relative_position=mn.Vector3(0.0, 0.0, 0.0))
+        # self.model.apply_torque(torque=mn.Vector3(ang_vel[0], ang_vel[1], ang_vel[2]))
 
     def cmd_cb(self, msg: Twist):
         self.setVel(
