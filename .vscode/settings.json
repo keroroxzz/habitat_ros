@@ -13,6 +13,10 @@
         "complex": "cpp",
         "new": "cpp",
         "chrono": "cpp",
-        "vector": "cpp"
-    }
+        "vector": "cpp",
+        "typeindex": "cpp",
+        "typeinfo": "cpp",
+        "ostream": "cpp"
+    },
+    "ros.distro": "noetic"
 }

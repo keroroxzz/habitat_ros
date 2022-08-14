@@ -1,0 +1,9 @@
+{
+    "render_asset": "oreo.glb",
+    "collision_asset": "oreo_collision.glb",
+    "join_collision_meshes": false,
+    "mass": 35.0,
+    "friction_coefficient": 0.4,
+    "restitution_coefficient": 0.05,
+    "COM": [0, 0.05, 0]
+}

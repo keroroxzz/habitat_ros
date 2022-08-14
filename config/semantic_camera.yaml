@@ -1,0 +1,40 @@
+# The camera discription file of the robot in habitat
+
+semantic_camera:
+  type: "Semantic_Camera"
+  name: "semantic_camera"
+  frame: "camera"
+  topic: "semantic"
+  publish_transfromation: False
+  position: [0.1, 0.0, 0.75]
+
+  # actuation topics and corresponding actions
+  actuation:
+    topics: ["camera/tilt"]
+    actions: ["look_up"]
+
+  sensor_info:
+    hfov: 90
+    far: 100000.0
+    near: 0.1
+    
+    image_width: 640
+    image_height: 480
+    camera_name: camera
+    camera_matrix:
+      rows: 3
+      cols: 3
+      data: [300, 0, 300, 0, 400, 400, 0, 0, 1]
+    distortion_model: plumb_bob
+    distortion_coefficients: 
+      rows: 1
+      cols: 5
+      data: [0, 0, 0, 0, 0]
+    rectification_matrix:
+      rows: 3
+      cols: 3
+      data: [1, 0, 0, 0, 1, 0, 0, 0, 1]
+    projection_matrix:
+      rows: 3
+      cols: 4
+      data: [300, 0, 300, 0, 0, 400, 400, 0, 0, 0, 1, 0]

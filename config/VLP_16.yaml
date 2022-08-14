@@ -1,14 +1,25 @@
 # The Velodyne VPL-16 discription file of the robot in habitat
+velodyne_vlp_16:
 
-far: 100.0
-near: 0.1
+  type: "3D_LiDAR"
+  name: "velodyne_vlp_16"
+  frame: "lidar"
+  topic: "range"
+  point_cloud_topic: "point_cloud"
+  publish_transfromation: True
+  position: [0.0, 0.0, 1.1]
 
-vfov: 30
-hfov: 360
+  sensor_info:
 
-resolution:
-  vertical: 16
-  horizontal: 360
+    far: 100.0
+    near: 0.1
 
-accuracy: 0.03
-rate: 20
+    vfov: 30
+    hfov: 360
+
+    accuracy: 0.03
+    rate: 20
+
+    resolution:
+      vertical: 16
+      horizontal: 360

@@ -1,0 +1,45 @@
+# The camera discription file of the robot in habitat
+
+fake_camera:
+  type: "RGB_Camera"
+  name: "fake_camera"
+  frame: "fake_camera"
+  topic: "/fake_camera"
+  topic_frame: "fake_camera_link" # explicitly set the msg's frame
+  position: [-0.7, 0.0, 0.8]
+  publish_transfromation: True
+  
+  # actuation topics and corresponding actions
+  actuation:
+    topics: ["/camera/tilt"]
+    actions: ["look_up"]
+
+  camera_info_topic: "camera_info"
+  sensor_info:
+    hfov: 90
+    far: 100000.0
+    near: 0.1
+    
+    image_width: 640
+    image_height: 480
+    camera_name: camera
+
+    distortion_model: plumb_bob
+    distortion_coefficients: 
+      rows: 1
+      cols: 5
+      data: [0, 0, 0, 0, 0]
+    rectification_matrix:
+      rows: 3
+      cols: 3
+      data: [1, 0, 0, 0, 1, 0, 0, 0, 1]
+
+    # Not used, calculated by the spec of camera
+    camera_matrix:
+      rows: 3
+      cols: 3
+      data: [300, 0, 300, 0, 400, 400, 0, 0, 1]
+    projection_matrix:
+      rows: 3
+      cols: 4
+      data: [300, 0, 300, 0, 0, 400, 400, 0, 0, 0, 1, 0]

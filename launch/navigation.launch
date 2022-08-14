@@ -1,0 +1,15 @@
+<launch>
+  <!-- gmapping -->
+  <node pkg="gmapping" type="slam_gmapping" name="gmapping_thing" output="screen" >
+    <remap from="scan" to="scan" />
+    <remap from="base_link" to="base_footprint" />
+    <remap from="odom" to="odom" />
+  </node>
+
+  <include file="$(find navigation)/launch/move_base_gmapping.launch">
+  </include>
+
+  <!-- rviz -->
+  <node pkg="rviz" type="rviz" name="rviz" required="true"
+        args="-d $(find habitat_ros)/rviz/example.rviz"/>
+</launch>

@@ -1,0 +1,34 @@
+<launch>
+  <!-- scene configs -->
+  <arg name="scene" default="/home/rtu/dataset/habitat/hm3d/hm3d/00009-vLpv2VX547B/vLpv2VX547B.basis.glb"/>
+  <arg name="dataset" default="/home/rtu/dataset/habitat/hm3d/hm3d_annotated_basis.scene_dataset_config.json"/>
+  <param name="habitat_scene" type="str" value="$(arg scene)" />
+  <param name="habitat_dataset" type="str" value="$(arg dataset)" />
+  
+  <!-- robot configs -->
+  <rosparam command="load" file="$(find habitat_ros)/config/oreo.yaml" />
+  <rosparam command="load" file="$(find habitat_ros)/config/VLP_16.yaml" />
+  <rosparam command="load" file="$(find habitat_ros)/config/rgbcam.yaml" />
+  <rosparam command="load" file="$(find habitat_ros)/config/depth_camera.yaml" />
+  <rosparam command="load" file="$(find habitat_ros)/config/sick_laser.yaml" />
+  <rosparam command="load" file="$(find habitat_ros)/config/semantic_camera.yaml" />
+  <rosparam command="load" file="$(find habitat_ros)/config/fake_camera.yaml" />
+  
+  <!-- simulator -->
+  <node pkg="habitat_ros" type="sim.py" name="habitat_simulator" />
+
+  <!-- extra sensor proc nodes -->
+  <node pkg="habitat_ros" type="range_to_pointcloud" name="velodyne_vlp_16" />
+  <node pkg="habitat_ros" type="range_to_laserscan" name="sick_laser" />
+
+  <!-- depth image to point clouds -->
+  <node pkg="nodelet" type="nodelet" args="manager"
+          name="nodelet_manager" output="screen"/>
+  <node pkg="nodelet" type="nodelet" name="cloudify"
+          args="load depth_image_proc/point_cloud_xyzrgb nodelet_manager">
+      <remap from="depth_registered/image_rect" to="/depth"/>
+      <remap from="depth_registered/points" to="camera/depth_registered/points"/>
+      <remap from="rgb/image_rect_color" to="/camera"/>
+      <remap from="rgb/camera_info" to="/camera_info"/>
+  </node>
+</launch>

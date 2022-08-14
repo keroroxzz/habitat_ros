@@ -1,0 +1,29 @@
+oreo:
+  type: "Robot"
+  name: "oreo"
+  frame: "/oreo"
+
+  sensors: ["velodyne_vlp_16", "rgbcamera", "sick_laser", "depthcamera", "semantic_camera", "fake_camera"]
+  # sensors: ["rgbcamera", "depthcamera", "fake_camera"]
+
+  translation: [0.0, 0.0, 0.5]
+  rotation: [0.0, 0.0, 0.0, 1.0]
+  model_path: "/home/rtu/catkin_ws/src/habitat_ros/robot/oreo/oreo"
+
+  cmd_topic: "/cmd_vel"
+
+  odom:
+    topic: "/odom"
+    frame: "/odom"
+    child_frame: "/base_link"
+    
+  tf_links:
+    base_link:
+      frame: "/base_link"
+      position: [0.0, 0.0, 0.0]
+      orientation: [0.0, 0.0, 0.0, 1.0]
+
+    base_footprint:
+      frame: "/base_footprint"
+      position: [0.0, 0.0, 0.0]
+      orientation: [0.0, 0.0, 0.0, 1.0]

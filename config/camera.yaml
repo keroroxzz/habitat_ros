@@ -2,6 +2,10 @@
 # Note that the width, height, camera_matrix and projection_matrix are
 # currently not used and will be overwitten in the program
 
+hfov: 90
+far: 100000.0
+near: 0.1
+
 image_width: 640
 image_height: 480
 camera_name: camera
