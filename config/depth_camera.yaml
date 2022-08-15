@@ -19,8 +19,8 @@ depthcamera:
     far: 100000.0
     near: 0.1
     
-    image_width: 224
-    image_height: 224
+    image_width: 512
+    image_height: 512
     camera_name: camera
     camera_matrix:
       rows: 3

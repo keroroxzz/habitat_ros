@@ -3,12 +3,12 @@ oreo:
   name: "oreo"
   frame: "/oreo"
 
+  # the sensors param namespace
   sensors: ["velodyne_vlp_16", "rgbcamera", "sick_laser", "depthcamera", "semantic_camera", "fake_camera"]
-  # sensors: ["rgbcamera", "depthcamera", "fake_camera"]
 
   translation: [0.0, 0.0, 0.5]
   rotation: [0.0, 0.0, 0.0, 1.0]
-  model_path: "/home/rtu/catkin_ws/src/habitat_ros/robot/oreo/oreo"
+  model_path: "robot/oreo/oreo"
 
   cmd_topic: "/cmd_vel"
 

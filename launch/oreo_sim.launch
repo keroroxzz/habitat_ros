@@ -1,7 +1,7 @@
 <launch>
   <!-- scene configs -->
-  <arg name="scene" default="/home/rtu/dataset/habitat/hm3d/hm3d/00009-vLpv2VX547B/vLpv2VX547B.basis.glb"/>
-  <arg name="dataset" default="/home/rtu/dataset/habitat/hm3d/hm3d_annotated_basis.scene_dataset_config.json"/>
+  <arg name="scene" default="00017"/>
+  <arg name="dataset" default="$(env HABITAT_DATASET_PATH)"/>
   <param name="habitat_scene" type="str" value="$(arg scene)" />
   <param name="habitat_dataset" type="str" value="$(arg dataset)" />
   

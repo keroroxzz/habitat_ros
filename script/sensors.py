@@ -1,20 +1,20 @@
+import os
 import math
-from turtle import pos, position
 import yaml
 import numpy as np
 import PIL.Image as PILImage
 from abc import ABC, abstractmethod
 from typing import Dict, List
 
-
 # habitat
-# import magnum as mn
+import magnum as mn
 import habitat_sim
 from habitat_sim.utils.common import quat_from_angle_axis, quat_to_angle_axis, quat_to_coeffs, quat_from_magnum
 from habitat_sim.utils.common import d3_40_colors_rgb
 
 # ros libs
 import rospy
+import rospkg
 import tf
 import tf.transformations as tfs
 
@@ -27,6 +27,7 @@ from cv_bridge import CvBridge
 
 bridge = CvBridge()
 tfBroadcaster = tf.TransformBroadcaster()
+pkg_path = rospkg.RosPack().get_path('habitat_ros')
 
 ## Utils
 def y_up2z_up(position=None, rotation=None):
@@ -213,7 +214,7 @@ class Robot(ControllableObject):
 
 
     def __loadSpec__(self, data):
-        self.model_path = data["model_path"]
+        self.model_path =  os.path.join(pkg_path, data["model_path"])
         self.model_translation = np.asarray(data["translation"])[(1,2,0),]
         self.model_rotation = data["rotation"]
 
@@ -347,8 +348,16 @@ class Robot(ControllableObject):
         self.vel_control.linear_velocity = lin_vel
         self.vel_control.angular_velocity = ang_vel
 
+        # experimental
+        # lin_vel = self.model.transformation.rotation()*mn.Vector3(lin_vel[0],lin_vel[1],lin_vel[2])
+        # lin_vel.y = self.model.linear_velocity.y
+        # ang_vel[0] = self.model.angular_velocity.x
+        # ang_vel[2] = self.model.angular_velocity.z
+        # self.model.linear_velocity = lin_vel
+        # self.model.angular_velocity = ang_vel
+
         # Neet to transform to the local coordinate
-        # lin_vel *= -50.0
+        # lin_vel *= 50.0
         # self.model.apply_force(force=mn.Vector3(lin_vel[0], lin_vel[1], lin_vel[2]), relative_position=mn.Vector3(0.0, 0.0, 0.0))
         # self.model.apply_torque(torque=mn.Vector3(ang_vel[0], ang_vel[1], ang_vel[2]))
 

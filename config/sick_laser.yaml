@@ -12,7 +12,7 @@ sick_laser:
   sensor_info:
 
     far: 100.0
-    near: 0.6
+    near: 0.25
 
     hfov: 360
 
