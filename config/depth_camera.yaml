@@ -3,9 +3,9 @@
 depthcamera:
   type: "Depth_Camera"
   name: "depthcamera"
-  frame: "/camera"
+  frame: "/camera_link"
   topic: "/depth"
-  topic_frame: "/camera_link" # explicitly set the msg's frame
+  topic_frame: "/camera" # explicitly set the msg's frame
   position: [0.1, 0.0, 0.75]
   publish_transfromation: False
 

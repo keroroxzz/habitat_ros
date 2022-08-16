@@ -3,9 +3,9 @@
 rgbcamera:
   type: "RGB_Camera"
   name: "rgbcamera"
-  frame: "/camera"
+  frame: "/camera_link"
   topic: "/camera"
-  topic_frame: "/camera_link" # explicitly set the msg's frame
+  topic_frame: "/camera" # explicitly set the msg's frame
   position: [0.1, 0.0, 0.75]
   publish_transfromation: True
   
@@ -17,7 +17,7 @@ rgbcamera:
   # extra child links
   tf_links:
     camera_link:
-      frame: "/camera_link"
+      frame: "/camera"
       position: [0.0, 0.0, 0.0]
       orientation: [ -1.57, 0.0, -1.57]
 

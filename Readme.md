@@ -30,7 +30,7 @@ It currently supports the HM3D-semantic v1.0 dataset.
 
 Please prepare and set the path to the dataset config file.
 
-$ export HABITAT_DATASET_PATH=your/path/to/dataset.scene_dataset_config
+$ export HABITAT_DATASET_PATH=your/path/to/dataset.scene_dataset_config.json
 
 https://github.com/matterport/habitat-matterport-3dresearch/tree/hm3d-semantics-v0.1-fix
 
