@@ -21,7 +21,7 @@ bridge = CvBridge()
 pkg_path = rospkg.RosPack().get_path('habitat_ros')
 
 class MouseController(QDialog):
-    def __init__(self, rate) -> None:
+    def __init__(self, rate, app: QApplication) -> None:
         super().__init__()
         self.initUI()
 
@@ -32,6 +32,7 @@ class MouseController(QDialog):
         self.rate = rospy.Rate(rate)
         self.img = None
         self.pmouse = None
+        self.QApp = app
 
         self.cmd_pub = CmdPub(rate)
         rospy.Subscriber("fake_camera", Image, self.img_cb, queue_size=10)
@@ -55,6 +56,8 @@ class MouseController(QDialog):
         self.img = bridge.imgmsg_to_cv2(msg, desired_encoding="bgr8")
         self.showImage(self.img)
         self.update()
+        self.QApp.processEvents()
+        # print(f'Update image at {rospy.Time.now()}')
 
     def mousePressEvent(self, a0: QtGui.QMouseEvent) -> None:
         self.pmouse = a0.pos()
@@ -149,8 +152,8 @@ class CmdPub(QThread):
 import time
 if __name__ == "__main__":
 
-    a = QApplication(sys.argv)
-    controller = MouseController(60)
+    app = QApplication(sys.argv)
+    controller = MouseController(60, app)
     controller.show()
-    sys.exit(a.exec_())
+    sys.exit(app.exec_())
 
