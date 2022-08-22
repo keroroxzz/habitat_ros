@@ -97,7 +97,8 @@ class CmdPub(QThread):
         self.my = -y
 
     def setKey(self, key, status):
-        self.keys[key]=status
+        if key>-1 and key<self.keys.shape[0]:
+            self.keys[key]=status
 
     def valid(self, cmd):
         v = np.linalg.norm(np.asarray([cmd.linear.x,
