@@ -27,7 +27,7 @@ from cv_bridge import CvBridge
 
 bridge = CvBridge()
 tfBroadcaster = tf.TransformBroadcaster()
-pkg_path = rospkg.RosPack().get_path('habitat_ros')
+pkg_path = rospkg.RosPack().get_path(os.environ["Package_name"])
 
 ## Utils
 def y_up2z_up(position=None, rotation=None):

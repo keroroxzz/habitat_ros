@@ -4,6 +4,8 @@ The Habitat_ROS package - Simulation runner
 by Brian, Ariel, and James.
 '''
 
+import os
+
 # habitat
 import habitat_sim
 
@@ -17,7 +19,7 @@ from sensors import Robot
 from cv_bridge import CvBridge
 
 bridge = CvBridge()
-pkg_path = rospkg.RosPack().get_path('habitat_ros')
+pkg_path = rospkg.RosPack().get_path(os.environ["Package_name"])
 
 default_scene = "/home/rtu/dataset/habitat/hm3d/hm3d/00009-vLpv2VX547B/vLpv2VX547B.basis.glb"
 default_dataset = "/home/rtu/dataset/habitat/hm3d/hm3d_annotated_basis.scene_dataset_config.json"
@@ -32,8 +34,8 @@ class HabitatSimROS:
 
         self.rate = rospy.Rate(rate)
         self.fps: float = rate
-
-        self.robot = Robot('oreo')
+        robot_name = rospy.get_param("/robot_name", default="oreo")
+        self.robot = Robot(robot_name)
         self.robot.loadSensors()
 
         # Init settings
