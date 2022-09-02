@@ -19,7 +19,7 @@ from sensors import Robot
 from cv_bridge import CvBridge
 
 bridge = CvBridge()
-pkg_path = rospkg.RosPack().get_path(os.environ["Package_name"])
+pkg_path = rospkg.RosPack().get_path("habitat_ros")
 
 default_scene = "/home/rtu/dataset/habitat/hm3d/hm3d/00009-vLpv2VX547B/vLpv2VX547B.basis.glb"
 default_dataset = "/home/rtu/dataset/habitat/hm3d/hm3d_annotated_basis.scene_dataset_config.json"

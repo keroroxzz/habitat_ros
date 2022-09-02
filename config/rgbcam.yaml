@@ -8,6 +8,7 @@ rgbcamera:
   topic_frame: "/camera" # explicitly set the msg's frame
   position: [0.1, 0.0, 0.75]
   publish_transfromation: True
+  pub_compressed: True #publish compressed image
   
   # actuation topics and corresponding actions
   actuation:

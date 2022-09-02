@@ -21,13 +21,13 @@ import tf.transformations as tfs
 # ros messages
 from std_msgs.msg import Float32
 from geometry_msgs.msg import Twist
-from sensor_msgs.msg import Image, CameraInfo
+from sensor_msgs.msg import Image, CompressedImage, CameraInfo
 from nav_msgs.msg import Odometry
 from cv_bridge import CvBridge
 
 bridge = CvBridge()
 tfBroadcaster = tf.TransformBroadcaster()
-pkg_path = rospkg.RosPack().get_path(os.environ["Package_name"])
+pkg_path = rospkg.RosPack().get_path("habitat_ros")
 
 ## Utils
 def y_up2z_up(position=None, rotation=None):
@@ -212,9 +212,14 @@ class Robot(ControllableObject):
         self.cmd_sub = rospy.Subscriber(self.cmd_topic, Twist, self.cmd_cb, queue_size=10)
         self.odom_pub = rospy.Publisher(self.odom_topic, Odometry, queue_size=10)
 
-
     def __loadSpec__(self, data):
-        self.model_path =  os.path.join(pkg_path, data["model_path"])
+
+        path = data["model_path"].split('/')
+        pkg_path = rospkg.RosPack().get_path(path[0])
+        model_path = data["model_path"][len(path[0])+1:]
+        self.model_path =  os.path.join(pkg_path, model_path)
+        rospy.logdebug("Load robot model from: " + self.model_path)
+        
         self.model_translation = np.asarray(data["translation"])[(1,2,0),]
         self.model_rotation = data["rotation"]
 
@@ -398,6 +403,7 @@ class Sensor(ControllableObject):
         else:
             self.msg_frame = self.frame
 
+
     def setSensorNode(self, agent_node):
         node = agent_node.node_sensor_suite.get(self.uuid).node
         self.__setNode__(node)
@@ -416,14 +422,14 @@ class Sensor(ControllableObject):
         matrix = np.matmul(matrix, self.correction_matrix)
         return tfs.quaternion_from_matrix(matrix)
 
-    def __publish__(self, msg, msg_time=None):
+    def __publish__(self, pub, msg, msg_time=None):
         """
         This function 
         """
 
         msg.header.stamp = msg_time if msg_time is not None else rospy.Time.now()
         msg.header.frame_id = self.msg_frame
-        self.pub.publish(msg)
+        pub.publish(msg)
 
     @abstractmethod
     def publish(self, observation, msg_time = None):
@@ -481,7 +487,7 @@ class LiDAR(Sensor):
         obs_sensor = self.getObservation(observation)
         crop = obs_sensor[self.v_bound:self.v_bound+self.vres, self.h_bound:self.h_bound+self.hres]
         msg = bridge.cv2_to_imgmsg(crop, encoding="passthrough")
-        self.__publish__(msg, msg_time)
+        self.__publish__(self.pub, msg, msg_time)
 
 
 class Laser(Sensor):
@@ -532,7 +538,7 @@ class Laser(Sensor):
         obs_sensor = self.getObservation(observation)
         crop = obs_sensor[:, self.h_bound:self.h_bound+self.hres]
         msg = bridge.cv2_to_imgmsg(crop, encoding="passthrough")
-        self.__publish__(msg, msg_time)
+        self.__publish__(self.pub, msg, msg_time)
 
 
 class Camera(Sensor):
@@ -553,6 +559,13 @@ class Camera(Sensor):
         self.hfov = sensor_info["hfov"]
         self.width = sensor_info["image_width"]
         self.height = sensor_info["image_width"]
+
+        keys = data.keys()
+
+        self.pub_compressed = None
+        if 'pub_compressed' in keys:
+            if data['pub_compressed']:
+                self.pub_compressed = rospy.Publisher(self.topic+'/compressed', CompressedImage, queue_size=1)
 
         if 'camera_info_topic' in self.data.keys():
             camera_info = CameraInfo()
@@ -625,7 +638,11 @@ class RGBCamera(Camera):
         obs_sensor = obs_sensor[...,0:3][...,::-1]
         msg = bridge.cv2_to_imgmsg(obs_sensor, encoding="bgr8")
 
-        self.__publish__(msg, msg_time)
+        if not self.pub_compressed is None:
+            msg_cp = bridge.cv2_to_compressed_imgmsg(obs_sensor, dst_format="jpg")
+            self.__publish__(self.pub_compressed, msg_cp, msg_time)
+
+        self.__publish__(self.pub, msg, msg_time)
         self.publishCameraInfo(msg_time)
 
 
@@ -638,7 +655,7 @@ class DepthCamera(Camera):
         obs_sensor = self.getObservation(observation)
         msg = bridge.cv2_to_imgmsg(obs_sensor, encoding="32FC1")
 
-        self.__publish__(msg, msg_time)
+        self.__publish__(self.pub, msg, msg_time)
         self.publishCameraInfo(msg_time)
 
 
@@ -662,5 +679,5 @@ class SemanticCamera(Camera):
         obs_sensor = self.toNumpy(obs_sensor)
         msg = bridge.cv2_to_imgmsg(obs_sensor, encoding="8UC4")
 
-        self.__publish__(msg, msg_time)
+        self.__publish__(self.pub, msg, msg_time)
         self.publishCameraInfo(msg_time)

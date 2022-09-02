@@ -1,3 +1,6 @@
+# specify the namespace of the robot
+robot_name: "oreo"
+
 oreo:
   type: "Robot"
   name: "oreo"
@@ -8,7 +11,9 @@ oreo:
 
   translation: [0.0, 0.0, 0.5]
   rotation: [0.0, 0.0, 0.0, 1.0]
-  model_path: "robot/oreo/oreo"
+
+  # the first name is the package name
+  model_path: "habitat_ros/robot/oreo/oreo"
 
   cmd_topic: "/cmd_vel"
 
