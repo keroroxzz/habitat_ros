@@ -21,18 +21,19 @@ bridge = CvBridge()
 pkg_path = rospkg.RosPack().get_path('habitat_ros')
 
 class MouseController(QDialog):
-    def __init__(self, rate, app: QApplication) -> None:
+    def __init__(self, rate, app) -> None:
+        self.QApp = app
         super().__init__()
         self.initUI()
 
         # add ros node, pub, sub
         rospy.init_node('MouseController', anonymous=True)
 
+        self.reset = False
         self.wait = 1000//rate
         self.rate = rospy.Rate(rate)
         self.img = None
         self.pmouse = None
-        self.QApp = app
 
         self.cmd_pub = CmdPub(rate)
         rospy.Subscriber("fake_camera", Image, self.img_cb, queue_size=10)
@@ -45,6 +46,9 @@ class MouseController(QDialog):
 
         layout = QGridLayout(self)
         layout.addWidget(self.label, 0, 0, 4, 4)
+
+    def exec(self):
+        return self.QApp.exec_()
 
     def showImage(self, img):
         height, width, channel = img.shape
@@ -71,8 +75,17 @@ class MouseController(QDialog):
         self.pmouse = a0.pos()
         return super().mouseMoveEvent(a0)
 
+    def restartApplication(self):
+        print("Restart Application...")
+        self.reset=True
+        self.QApp.closeAllWindows()
+
     def keyPressEvent(self, a0: QtGui.QKeyEvent) -> None:
         self.cmd_pub.setKey(a0.key(), 1)
+
+        if a0.key()==81: # press 'q' to restart the application if stuck
+            self.restartApplication()
+
         return super().keyPressEvent(a0)
     
     def keyReleaseEvent(self, a0: QtGui.QKeyEvent) -> None:
@@ -150,11 +163,13 @@ class CmdPub(QThread):
             self.rate.sleep()
 
 
-import time
 if __name__ == "__main__":
 
     app = QApplication(sys.argv)
-    controller = MouseController(60, app)
-    controller.show()
-    sys.exit(app.exec_())
+
+    controller = None
+    while controller is None or controller.reset:
+        controller = MouseController(60, app)
+        controller.show()
+        controller.exec()
 
