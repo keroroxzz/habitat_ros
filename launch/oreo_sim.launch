@@ -31,4 +31,5 @@
       <remap from="rgb/image_rect_color" to="/camera"/>
       <remap from="rgb/camera_info" to="/camera_info"/>
   </node>
+
 </launch>
