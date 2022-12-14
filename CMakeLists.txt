@@ -10,7 +10,6 @@ project(habitat_ros)
 find_package(catkin REQUIRED COMPONENTS
   pcl_conversions
   pcl_ros
-  message_generation
   roscpp
   rospy
   std_msgs
@@ -54,10 +53,10 @@ find_package(catkin REQUIRED COMPONENTS
 ##   * add every package in MSG_DEP_SET to generate_messages(DEPENDENCIES ...)
 
 ## Generate messages in the 'msg' folder
-add_message_files(
-  FILES
-  LiDARINFO.msg
-)
+# add_message_files(
+#   FILES
+#   LiDARINFO.msg
+# )
 
 ## Generate services in the 'srv' folder
 # add_service_files(
@@ -74,10 +73,10 @@ add_message_files(
 # )
 
 ## Generate added messages and services with any dependencies listed here
-generate_messages(
-  DEPENDENCIES
-  std_msgs  # Or other packages containing msgs
-)
+# generate_messages(
+#   DEPENDENCIES
+#   std_msgs  # Or other packages containing msgs
+# )
 
 ################################################
 ## Declare ROS dynamic reconfigure parameters ##
@@ -134,6 +133,9 @@ include_directories(
 add_executable(range_to_pointcloud src/range_to_pointcloud.cpp)
 target_link_libraries(range_to_pointcloud ${catkin_LIBRARIES})
 
+add_executable(range_to_laserscan src/range_to_lasssssssssssssssssssssssserscan.cpp)
+target_link_libraries(range_to_laserscan ${catkin_LIBRARIES})
+
 ## Add cmake target dependencies of the library
 ## as an example, code may need to be generated before libraries
 ## either from message generation or dynamic reconfigure
@@ -142,7 +144,6 @@ target_link_libraries(range_to_pointcloud ${catkin_LIBRARIES})
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
-add_executable(range_to_laserscan src/range_to_laserscan.cpp)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -155,9 +156,6 @@ add_executable(range_to_laserscan src/range_to_laserscan.cpp)
 # add_dependencies(${PROJECT_NAME}_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Specify libraries to link a library or executable target against
-target_link_libraries(range_to_laserscan
-   ${catkin_LIBRARIES}
- )
 
 #############
 ## Install ##

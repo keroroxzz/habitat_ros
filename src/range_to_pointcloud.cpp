@@ -1,3 +1,10 @@
+/*
+Equirectangular Depth to Point Cloud Converter
+Author: Biran Tu
+
+This is the source code for the converter transforming equirectangular depth image to point cloud.
+*/
+
 #include <iostream>
 #include <math.h>
 #include <vector>
@@ -8,7 +15,6 @@
 #include <sensor_msgs/Image.h>
 #include <sensor_msgs/image_encodings.h>
 #include <sensor_msgs/PointCloud2.h>
-#include <habitat_ros/LiDARINFO.h>
 
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/highgui/highgui.hpp>
@@ -42,7 +48,6 @@ class RangeToPointCloud
 
     double ***vector_map=nullptr;
     double **cosines=nullptr;
-    habitat_ros::LiDARINFO info;
 
     public:
     RangeToPointCloud(ros::NodeHandle* nh)

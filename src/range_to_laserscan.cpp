@@ -1,4 +1,10 @@
-#include <ros/ros.h>
+/*
+Equirectangular Depth to 2D Laser Scan Converter
+Author: Ariel
+
+This is the source code for the converter transforming equirectangular depth image to 2D laser scan.
+*/
+
 
 #include <iostream>
 #include <math.h>
@@ -11,6 +17,7 @@
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/highgui/highgui.hpp>
 
+#include <ros/ros.h>
 #include <std_msgs/Float32MultiArray.h>
 #include <geometry_msgs/Vector3.h>
 #include <visualization_msgs/Marker.h>

@@ -21,7 +21,7 @@ The package is currently tested with:
 
 2. Install the Habitat-Sim package:
 
-        conda forge -c aihabitat
+        conda install habitat-sim withbullet -c conda-forge -c aihabitat
 
 3. Install the dependencies:
 
