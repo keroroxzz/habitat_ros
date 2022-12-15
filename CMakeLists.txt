@@ -133,7 +133,7 @@ include_directories(
 add_executable(range_to_pointcloud src/range_to_pointcloud.cpp)
 target_link_libraries(range_to_pointcloud ${catkin_LIBRARIES})
 
-add_executable(range_to_laserscan src/range_to_lasssssssssssssssssssssssserscan.cpp)
+add_executable(range_to_laserscan src/range_to_laserscan.cpp)
 target_link_libraries(range_to_laserscan ${catkin_LIBRARIES})
 
 ## Add cmake target dependencies of the library
