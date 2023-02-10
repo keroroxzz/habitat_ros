@@ -540,7 +540,6 @@ class Laser(Sensor):
         msg = bridge.cv2_to_imgmsg(crop, encoding="passthrough")
         self.__publish__(self.pub, msg, msg_time)
 
-
 class Camera(Sensor):
     def __init__(self, name, parent_frame, yaml_file=None):
         super().__init__(name, parent_frame, yaml_file)
@@ -558,7 +557,7 @@ class Camera(Sensor):
         self.near = sensor_info["near"]
         self.hfov = sensor_info["hfov"]
         self.width = sensor_info["image_width"]
-        self.height = sensor_info["image_width"]
+        self.height = sensor_info["image_height"]
 
         keys = data.keys()
 

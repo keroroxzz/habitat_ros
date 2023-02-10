@@ -29,7 +29,7 @@ rgbcamera:
     near: 0.1
     
     image_width: 512
-    image_height: 512
+    image_height: 256
     camera_name: camera
 
     distortion_model: plumb_bob

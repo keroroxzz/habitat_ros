@@ -21,4 +21,4 @@ sick_laser:
 
     resolution:
       horizontal: 512
-      vertical: 60
+      vertical: 512 # must be the same to horizontal resolution to force habitat rendering the horizontal as the expected resolution.

@@ -15,7 +15,7 @@
   <rosparam command="load" file="$(find habitat_ros)/config/fake_camera.yaml" />
   
   <!-- simulator -->
-  <node pkg="habitat_ros" type="sim.py" name="habitat_simulator" />
+  <node pkg="habitat_ros" type="sim.py" name="habitat_simulator" output="screen"/>
 
   <!-- extra sensor proc nodes -->
   <node pkg="habitat_ros" type="range_to_pointcloud" name="velodyne_vlp_16" />

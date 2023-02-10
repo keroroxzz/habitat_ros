@@ -162,7 +162,6 @@ class CmdPub(QThread):
             self.pub_cmd()
             self.rate.sleep()
 
-
 if __name__ == "__main__":
 
     app = QApplication(sys.argv)
@@ -172,4 +171,3 @@ if __name__ == "__main__":
         controller = MouseController(60, app)
         controller.show()
         controller.exec()
-
