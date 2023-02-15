@@ -17,7 +17,8 @@ velodyne_vlp_16:
     vfov: 30
     hfov: 360
 
-    accuracy: 0.03
+    mean_error: 0.0012
+    max_error: 0.003
     rate: 20
 
     resolution:

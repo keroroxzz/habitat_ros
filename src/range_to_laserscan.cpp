@@ -27,9 +27,6 @@ This is the source code for the converter transforming equirectangular depth ima
 #include <sensor_msgs/PointCloud2.h>
 #include <sensor_msgs/LaserScan.h>
 
-#include <vector>
-#include <math.h>
-
 using namespace std;
 
 class RangeToLaserScan
@@ -44,12 +41,15 @@ class RangeToLaserScan
     string sub_topic;
     string pub_topic;
     string frame;
+    string unit;
     float far;
     float near;
-    float hfov;
-    int res_x;
-    int res_y;
-    int target_row;
+    float ang_min;
+    float ang_max;
+    float ang_increment;
+    // int res_x;
+    // int res_y;
+    // int target_row;
 
     public:
     RangeToLaserScan(ros::NodeHandle* nh)
@@ -78,15 +78,6 @@ class RangeToLaserScan
         name = ros::this_node::getName();
 
         cout<<"Initialize the parameter of "<<name<<endl;
-        if(!n->getParam(name+"/sensor_info/resolution/horizontal", res_x)){
-            ROS_WARN("No horizontal resolution.");
-        }
-        if(!n->getParam(name+"/sensor_info/resolution/vertical", res_y)){
-            ROS_WARN("No vertical resolution.");
-        }
-        if(!n->getParam(name+"/sensor_info/hfov", hfov)){
-            ROS_WARN("No horizontal fov.");
-        }
         if(!n->getParam(name+"/sensor_info/far", far)){
             ROS_WARN("No far clip.");
         }
@@ -104,22 +95,44 @@ class RangeToLaserScan
         if(!n->getParam(name+"/laserscan_topic", pub_topic)){
             ROS_WARN("No publish topic.");
         }
+        if(!n->getParam(name+"/sensor_info/ang_min", ang_min)){
+            ROS_WARN("No minimum angle.");
+        }
+        if(!n->getParam(name+"/sensor_info/ang_max", ang_max)){
+            ROS_WARN("No maximum angle.");
+        }
+        if(!n->getParam(name+"/sensor_info/ang_increment", ang_increment)){
+            ROS_WARN("No angle increment.");
+        }
+        if(!n->getParam(name+"/sensor_info/unit", unit)){
+            ROS_WARN("No unit.");
+        }
+
         extendTopic(pub_topic);
 
-        hfov = hfov/180.0*M_PI;
-        target_row = res_y/2;
+        // hfov = hfov/180.0*M_PI;
+        // target_row = res_y/2;
 
-        laserscanmsg.angle_max = hfov/2.0;
-        laserscanmsg.angle_min = -hfov/2.0;
-        laserscanmsg.angle_increment = hfov/res_x;
+        if (unit.compare("deg") == 0){
+            ang_max *= M_PI/180.0;
+            ang_min *= M_PI/180.0;
+            ang_increment *= M_PI/180.0;
+            ROS_WARN("Input unit as degree, transform to radian...");
+        }
+
+        laserscanmsg.angle_max = ang_max;
+        laserscanmsg.angle_min = ang_min;
+        laserscanmsg.angle_increment = ang_increment;
         laserscanmsg.range_max = far;
         laserscanmsg.range_min = near;
         laserscanmsg.header.frame_id = frame;
+
     }
 
     // calculate the correction factor of the depth image
     float correction(int x){
-        float angle = (float(x)/res_x - 0.5) * hfov;
+        // float angle = (float(x)/res_x - 0.5) * hfov;
+        float angle = ang_min + x * ang_increment;
         float vx = abs(cos(angle));
         float vy = abs(sin(angle));
         return max(vx,vy);
@@ -138,13 +151,14 @@ class RangeToLaserScan
 
         vector<float> laserscan_array;
 
-        for(int i=res_x-1;i>=0;i--){
-            float distance = cv_ptr->image.at<float>(target_row, i)/correction(i);
+        for(int i = cv_ptr->image.cols-1;i>=0;i--){
+            float distance = cv_ptr->image.at<float>(0, i)/correction(i);
             if (distance>laserscanmsg.range_max || distance<laserscanmsg.range_min)
                 distance = 0.0;
             laserscan_array.push_back(distance);
         }
 
+        cout << "Publish..." << endl;
         laserscanmsg.header.stamp = msg->header.stamp; 
         laserscanmsg.ranges = laserscan_array;
         pub_laserscan.publish(laserscanmsg);

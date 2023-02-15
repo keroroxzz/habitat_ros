@@ -7,18 +7,24 @@ sick_laser:
   topic: "laser"
   laserscan_topic: "/scan"
   publish_transfromation: True
-  position: [0.0, 0.0, 0.1]
+  position: [0.15, 0.0, 0.1]
 
   sensor_info:
 
-    far: 100.0
-    near: 0.25
+    far: 20.0
+    near: 0.5
 
-    hfov: 360
+    unit: "deg" # def or rad
+    ang_min: -135
+    ang_max: 135
+    ang_increment: 0.25
 
-    accuracy: 0.03
-    rate: 20
+    mean_error: 0.0012
+    max_error: 0.003
+    rate: 25
 
+    # not used for now
+    hfov: 270
     resolution:
-      horizontal: 512
-      vertical: 512 # must be the same to horizontal resolution to force habitat rendering the horizontal as the expected resolution.
+      horizontal: 1080
+      vertical: 1080 # must be the same to horizontal resolution to force habitat rendering the horizontal as the expected resolution.
