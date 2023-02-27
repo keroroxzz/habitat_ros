@@ -1,6 +1,7 @@
 <launch>
   <!-- scene configs -->
   <arg name="scene" default="00009"/>
+  <arg name="control_panel" default="false"/>
   <arg name="dataset" default="$(env HABITAT_DATASET_PATH)"/>
   <param name="habitat_scene" type="str" value="$(arg scene)" />
   <param name="habitat_dataset" type="str" value="$(arg dataset)" />
@@ -24,6 +25,7 @@
   <!-- depth image to point clouds -->
   <node pkg="nodelet" type="nodelet" args="manager"
           name="nodelet_manager" output="screen"/>
+
   <node pkg="nodelet" type="nodelet" name="cloudify"
           args="load depth_image_proc/point_cloud_xyzrgb nodelet_manager">
       <remap from="depth_registered/image_rect" to="/depth"/>
@@ -31,5 +33,9 @@
       <remap from="rgb/image_rect_color" to="/camera"/>
       <remap from="rgb/camera_info" to="/camera_info"/>
   </node>
+
+  <group if="$(arg control_panel)">
+    <node pkg="habitat_ros" type="control.py" name="control"/>
+  </group>
 
 </launch>

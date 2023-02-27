@@ -1,10 +1,8 @@
 #! /usr/bin/env python3
-'''
+"""
 The Habitat_ROS package - Simulation runner
 by Brian, Ariel, and James.
-'''
-
-import os
+"""
 
 # habitat
 import habitat_sim
@@ -12,8 +10,7 @@ import habitat_sim
 # ros libs
 import rospy
 import rospkg
-import roslaunch
-from sensors import Robot
+from habitat_ros.robot import *
 
 # ros messages
 from cv_bridge import CvBridge
@@ -49,6 +46,7 @@ class HabitatSimROS:
         self.default_agent = self.sim.get_agent(self.agent_id)
         self.agent_body_node = self.default_agent.scene_node
 
+        self.robot.bindSimulator(self.sim)
         self.robot.setAgentNode(self.agent_body_node)
         self.robot.loadModel(self.sim)
 
@@ -90,12 +88,8 @@ class HabitatSimROS:
         
     def draw(self) -> None:
         self.sim.step_world(1.0 / self.fps)
-        obs = self.sim.get_sensor_observations()
-        msg_time = rospy.Time.now()
 
-        self.robot.publishTF(msg_time)
-        self.robot.publish(obs, msg_time)
-        self.robot.publishOdom(msg_time)
+        self.robot.update(rospy.Time.now())
         self.rate.sleep()
 
 if __name__ == "__main__":

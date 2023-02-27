@@ -1,7 +1,6 @@
 #! /usr/bin/env python3
 
 import sys
-import cv2
 import numpy as np
 from PyQt5 import QtGui
 from PyQt5.QtCore import QThread
@@ -10,15 +9,12 @@ from PyQt5.QtWidgets import QApplication, QDialog, QGridLayout, QLabel
 
 # ros libs
 import rospy
-import rospkg
 
 # ros messages
 from std_msgs.msg import Float32
 from sensor_msgs.msg import Image
 from geometry_msgs.msg import Twist
-from cv_bridge import CvBridge
-bridge = CvBridge()
-pkg_path = rospkg.RosPack().get_path('habitat_ros')
+from habitat_ros.utils import *
 
 class MouseController(QDialog):
     def __init__(self, rate, app) -> None:
