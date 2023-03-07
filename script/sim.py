@@ -34,7 +34,7 @@ class HabitatSimROS:
         robot_name = rospy.get_param("/robot_name", default="oreo")
         self.robot = Robot(robot_name)
         self.robot.loadSensors()
-
+        # input()
         # Init settings
         self.sim_settings = self.make_sim_settings()
         self.agent_id: int = self.sim_settings["default_agent"]
@@ -72,7 +72,7 @@ class HabitatSimROS:
             "scene_dataset_config_file": dataset,
 
             "default_agent": 0,
-            "silent": False,  # do not print log info (default: OFF)
+            "silent": True,  # do not print log info (default: OFF)
 
             "enable_physics": enable_physic,
         }

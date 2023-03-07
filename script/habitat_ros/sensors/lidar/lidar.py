@@ -1,3 +1,11 @@
+"""
+Habitat-ROS LiDAR Simulator
+
+Date: 2023/3/7
+
+Fix the LiDAR resolution issue
+"""
+
 # habitat
 import habitat_sim
 
@@ -32,8 +40,16 @@ class LiDAR(Sensor):
         self.maxerror = sensor_info["max_error"]
         self.rate = sensor_info["rate"]
 
-        self.res_v = int(self.vres/self.vfov*180)
+        self.stride_v = 1
         self.res_h = int(self.hres/self.hfov*360)
+        self.res_v = int(self.vres/self.vfov*180)
+
+        # habitat renders in equal resolution and stretch to the required resolution only
+        if self.res_h/self.res_v>=2:
+            self.stride_v = int(self.res_h/self.res_v)
+            self.res_v *= self.stride_v
+            self.vres *= self.stride_v
+            rospy.logwarn(f"The LiDAR renders in {self.res_v} x {self.res_h}, corrected by {self.stride_v}.")
 
         self.v_bound = int((self.res_v - self.vres)/2)
         self.h_bound = int((self.res_h - self.hres)/2)
@@ -62,7 +78,8 @@ class LiDAR(Sensor):
 
     def publish(self, observation, msg_time = None):
         obs_sensor = self.getObservation(observation)
-        crop = obs_sensor[self.v_bound:self.v_bound+self.vres, self.h_bound:self.h_bound+self.hres]
+        crop = obs_sensor[self.v_bound:self.v_bound+self.vres:self.stride_v, self.h_bound:self.h_bound+self.hres]
+        
         crop = crop + self.noise(crop.shape)
         msg = bridge.cv2_to_imgmsg(crop, encoding="passthrough")
         self.__publish__(self.pub, msg, msg_time)

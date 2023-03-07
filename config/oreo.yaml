@@ -18,7 +18,7 @@ oreo:
     friction_coefficient: 0.0
     angular_damping: 0.5
     linear_damping: 0.65
-    standing_force: 1000.0 # constantly apply force downward to prevent falling
+    standing_force: 500.0 # constantly apply force downward to prevent falling
 
   # the first name is the package name
   model_path: "habitat_ros/robot/oreo/oreo"

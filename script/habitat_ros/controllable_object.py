@@ -39,7 +39,7 @@ class ControllableObject(ABC):
     ## Param loading
     def __loadParam__(self, name, parent_frame, filename=None):
 
-        rospy.loginfo(f"Loading sensor parameters of {name} from ROS parameters...")
+        rospy.logdebug(f"Loading parameters of {name} from ROS parameters...")
         if filename:
             with open(filename, "r") as fp:
                 data = yaml.load(fp, yaml.Loader)[name]
@@ -80,7 +80,7 @@ class ControllableObject(ABC):
 
                 topic = self.extendTopic(topic)
                 rospy.Subscriber(topic, Float32, temp_callback, queue_size=10)
-                rospy.loginfo(f'{self.uuid}: Subscribe {topic} for {action} action.')
+                rospy.logdebug(f'{self.uuid}: Subscribe {topic} for {action} action.')
 
         # Loading the specs of child class
         self.__loadSpec__(data)

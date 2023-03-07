@@ -17,10 +17,10 @@ velodyne_vlp_16:
     vfov: 30
     hfov: 360
 
-    mean_error: 0.0012
-    max_error: 0.003
+    mean_error: 0.02
+    max_error: 0.03
     rate: 20
 
     resolution:
       vertical: 16
-      horizontal: 360
+      horizontal: 3600
