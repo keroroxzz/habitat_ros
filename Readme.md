@@ -45,11 +45,12 @@ https://github.com/matterport/habitat-matterport-3dresearch
 
 # Usage
 
-Activate a simulation environment:
+Activate a simulation environment (without control panel):
 
     $ conda activate {your habitat env}
     $ roslaunch habitat_ros oreo_sim.launch
 
-Turn on the control panel (please go to the base env):
+Activate a simulation environment (with control panel):
 
-    $ rosrun habitat_ros control.py
+    $ conda activate {your habitat env}
+    $ roslaunch habitat_ros oreo_sim.launch control_panel:=true
