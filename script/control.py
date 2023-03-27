@@ -3,7 +3,7 @@
 import sys
 import numpy as np
 from PyQt5 import QtGui
-from PyQt5.QtCore import QThread
+from PyQt5.QtCore import QThread, QTimer
 from PyQt5.QtGui import QImage, QPixmap
 from PyQt5.QtWidgets import QApplication, QDialog, QGridLayout, QLabel
 
@@ -31,6 +31,10 @@ class MouseController(QDialog):
         self.img = None
         self.pmouse = None
 
+        self.timer = QTimer(self)
+        self.timer.timeout.connect(self.loop)
+        self.timer.start(1000)
+
         self.cmd_pub = CmdPub(rate)
         rospy.Subscriber("fake_camera", Image, self.img_cb, queue_size=10)
 
@@ -51,6 +55,12 @@ class MouseController(QDialog):
         bytesPerline = 3 * width
         self.qImg = QImage(img.data, width, height, bytesPerline, QImage.Format_RGB888).rgbSwapped()
         self.label.setPixmap(QPixmap.fromImage(self.qImg))
+
+    def loop(self):
+        if rospy.is_shutdown():
+            print("ROS is shut down! Exit...")
+            self.reset=False
+            self.QApp.closeAllWindows()
 
     def img_cb(self, msg):
         self.img = bridge.imgmsg_to_cv2(msg, desired_encoding="bgr8")
@@ -161,7 +171,7 @@ class CmdPub(QThread):
 if __name__ == "__main__":
 
     app = QApplication(sys.argv)
-
+    
     controller = None
     while controller is None or controller.reset:
         controller = MouseController(60, app)
