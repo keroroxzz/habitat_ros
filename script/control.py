@@ -17,14 +17,16 @@ from geometry_msgs.msg import Twist
 from habitat_ros.utils import *
 
 class MouseController(QDialog):
-    def __init__(self, rate, app) -> None:
+    def __init__(self, rate, app, point) -> None:
         self.QApp = app
         super().__init__()
         self.initUI()
 
+        if point is not None:
+            self.move(point.x(), point.y())
+        
         # add ros node, pub, sub
         rospy.init_node('MouseController', anonymous=True)
-
         self.reset = False
         self.wait = 1000//rate
         self.rate = rospy.Rate(rate)
@@ -175,9 +177,10 @@ class CmdPub(QThread):
 if __name__ == "__main__":
 
     app = QApplication(sys.argv)
-    
+    point = None
     controller = None
     while controller is None or controller.reset:
-        controller = MouseController(60, app)
+        controller = MouseController(60, app, point)
         controller.show()
         controller.exec()
+        point = controller.pos()
