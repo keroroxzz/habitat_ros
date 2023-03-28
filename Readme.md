@@ -43,14 +43,30 @@ It currently supports the HM3D-semantic v1.0 dataset. Please prepare and set the
 
 https://github.com/matterport/habitat-matterport-3dresearch
 
-# Usage
+# Startup
+
+Always remenber to activate your conda env before starting this.
+
+    $ conda activate {your habitat env}
 
 Activate a simulation environment (without control panel):
 
-    $ conda activate {your habitat env}
     $ roslaunch habitat_ros oreo_sim.launch
 
 Activate a simulation environment (with control panel):
 
-    $ conda activate {your habitat env}
     $ roslaunch habitat_ros oreo_sim.launch control_panel:=true
+
+You can also specify a scene by argument "scene":
+
+    $ roslaunch habitat_ros oreo_sim.launch scene:=00009
+
+# Usage
+
+The control panel defines a few keys to control the robot.
+        
+        W/S/A/D: move forward/backward/left/right
+        Q/E: rotate left/right
+
+        esc: turn off the control panel
+        O: restart the control panel (sometime it stucks.)
