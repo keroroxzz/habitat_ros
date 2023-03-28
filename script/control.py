@@ -89,7 +89,7 @@ class MouseController(QDialog):
     def keyPressEvent(self, a0: QtGui.QKeyEvent) -> None:
         self.cmd_pub.setKey(a0.key(), 1)
 
-        if a0.key()==81: # press 'q' to restart the application if stuck
+        if a0.key()==79: # press 'q' to restart the application if stuck
             self.restartApplication()
 
         return super().keyPressEvent(a0)
@@ -131,14 +131,18 @@ class CmdPub(QThread):
 
     def pub_cmd(self):
         cmd = Twist()
-        if self.keys[87] == 1:
+        if self.keys[87] == 1: # W
             cmd.linear.x += 1.5
-        if self.keys[83] == 1:
+        if self.keys[83] == 1: # S
             cmd.linear.x += -1.5
-        if self.keys[65] == 1:
+        if self.keys[65] == 1: # A
             cmd.linear.y += 1.5
-        if self.keys[68] == 1:
+        if self.keys[68] == 1: # D
             cmd.linear.y += -1.5
+        if self.keys[81] == 1: # Q
+            cmd.angular.z += 10.0
+        if self.keys[69] == 1: # E
+            cmd.angular.z -= 10.0
 
         cmd.angular.z += -self.mx
 
