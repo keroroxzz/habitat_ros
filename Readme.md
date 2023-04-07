@@ -25,8 +25,8 @@ The package is currently tested with:
 
 3. Install the dependencies:
 
-        conda install -c conda-forge pyyaml rospkg defusedxml
-        conda install opencv
+        conda install -c conda-forge pyyaml rospkg defusedxml opencv
+        conda install -c anaconda pyqt
 
 4. Install Habitat-ROS package:
 
