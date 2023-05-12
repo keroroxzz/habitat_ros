@@ -8,6 +8,7 @@ fake_camera:
   topic_frame: "fake_camera_link" # explicitly set the msg's frame
   position: [-0.7, 0.0, 0.8]
   publish_transfromation: True
+  pub_compressed: True #publish compressed image
   
   # actuation topics and corresponding actions
   actuation:

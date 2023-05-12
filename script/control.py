@@ -12,7 +12,7 @@ import rospy
 
 # ros messages
 from std_msgs.msg import Float32
-from sensor_msgs.msg import Image
+from sensor_msgs.msg import CompressedImage
 from geometry_msgs.msg import Twist
 from habitat_ros.utils import *
 
@@ -28,7 +28,6 @@ class MouseController(QDialog):
         # add ros node, pub, sub
         rospy.init_node('MouseController', anonymous=True)
         self.reset = False
-        self.wait = 1000//rate
         self.rate = rospy.Rate(rate)
         self.img = None
         self.pmouse = None
@@ -38,7 +37,7 @@ class MouseController(QDialog):
         self.timer.start(1000)
 
         self.cmd_pub = CmdPub(rate)
-        rospy.Subscriber("fake_camera", Image, self.img_cb, queue_size=10)
+        rospy.Subscriber("camera", CompressedImage, self.img_cb, queue_size=1)
 
         self.cmd_pub.start()
 
@@ -65,7 +64,7 @@ class MouseController(QDialog):
             self.QApp.closeAllWindows()
 
     def img_cb(self, msg):
-        self.img = bridge.imgmsg_to_cv2(msg, desired_encoding="bgr8")
+        self.img = bridge.compressed_imgmsg_to_cv2(msg, desired_encoding="bgr8")
         self.showImage(self.img)
         self.update()
         self.QApp.processEvents()
@@ -134,20 +133,25 @@ class CmdPub(QThread):
     def pub_cmd(self):
         cmd = Twist()
         if self.keys[87] == 1: # W
-            cmd.linear.x += 1.5
+            cmd.linear.x += 0.8
         if self.keys[83] == 1: # S
-            cmd.linear.x += -1.5
+            cmd.linear.x += -0.8
         if self.keys[65] == 1: # A
-            cmd.linear.y += 1.5
+            cmd.linear.y += 0.5
         if self.keys[68] == 1: # D
-            cmd.linear.y += -1.5
+            cmd.linear.y += -0.5
         if self.keys[81] == 1: # Q
-            cmd.angular.z += 10.0
+            cmd.angular.z += 1.0
         if self.keys[69] == 1: # E
-            cmd.angular.z -= 10.0
+            cmd.angular.z -= 1.0
 
         cmd.angular.z += -self.mx
 
+        # boost the speed by pressing space
+        if self.keys[32] == 1:
+            cmd.linear.x *= 2.0
+            cmd.linear.y *= 2.0
+            cmd.angular.z *= 3.0
 
         self.cmd_vel.linear.x = self.cmd_vel.linear.x*0.75 + cmd.linear.x*0.25
         self.cmd_vel.linear.y = self.cmd_vel.linear.y*0.75 + cmd.linear.y*0.25

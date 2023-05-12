@@ -5,7 +5,7 @@ velodyne_vlp_16:
   name: "velodyne_vlp_16"
   frame: "lidar"
   topic: "range"
-  point_cloud_topic: "point_cloud"
+  point_cloud_topic: "/velodyne_points"
   publish_transfromation: True
   position: [0.0, 0.0, 1.1]
 

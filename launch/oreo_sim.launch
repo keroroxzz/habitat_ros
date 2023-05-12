@@ -35,7 +35,9 @@
   </node>
 
   <group if="$(arg control_panel)">
-    <node pkg="habitat_ros" type="control.py" name="control"/>
+    <node pkg="habitat_ros" type="control.py" name="control">
+      <remap from="camera" to="fake_camera/compressed"/>
+    </node>
   </group>
 
 </launch>
