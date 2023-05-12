@@ -7,7 +7,7 @@ oreo:
   frame: "/base_link"
 
   # the sensors param namespace
-  sensors: ["velodyne_vlp_16", "rgbcamera", "sick_laser", "depthcamera", "semantic_camera", "fake_camera"]
+  sensors: ["velodyne_vlp_16", "rgbcamera", "sick_laser", "hokuyo", "depthcamera", "semantic_camera", "fake_camera"]
 
   translation: [0.0, 0.0, 0.5]
   rotation: [0.0, 0.0, 0.0, 1.0]

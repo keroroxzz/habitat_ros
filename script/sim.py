@@ -34,6 +34,7 @@ class HabitatSimROS:
         robot_name = rospy.get_param("/robot_name", default="oreo")
         self.robot = Robot(robot_name)
         self.robot.loadSensors()
+        
         # input()
         # Init settings
         self.sim_settings = self.make_sim_settings()

@@ -1,0 +1,31 @@
+# The SICK Laser discription file of the robot in habitat
+hokuyo:
+
+  type: "2D_Laser"
+  name: "hokuyo"
+  frame: "/laser_hokuyo"
+  topic: "laser_hokuyo"
+  laserscan_topic: "/hokuyo_scan"
+  publish_transfromation: True
+  position: [-0.25, 0.0, 0.1]
+  orientation: [0.0, 3.14159, 0.0]
+
+  sensor_info:
+
+    far: 5.6
+    near: 0.2
+
+    unit: "deg" # def or rad
+    ang_min: -120
+    ang_max: 120
+    ang_increment: 0.36
+
+    mean_error: 0.03
+    max_error: 0.04
+    rate: 25
+
+    # not used for now
+    hfov: 270
+    resolution:
+      horizontal: 1080
+      vertical: 1080 # must be the same to horizontal resolution to force habitat rendering the horizontal as the expected resolution.

@@ -9,6 +9,7 @@
   <!-- robot configs -->
   <rosparam command="load" file="$(find habitat_ros)/config/oreo.yaml" />
   <rosparam command="load" file="$(find habitat_ros)/config/VLP_16.yaml" />
+  <rosparam command="load" file="$(find habitat_ros)/config/hokuyo.yaml" />
   <rosparam command="load" file="$(find habitat_ros)/config/rgbcam.yaml" />
   <rosparam command="load" file="$(find habitat_ros)/config/depth_camera.yaml" />
   <rosparam command="load" file="$(find habitat_ros)/config/sick_laser.yaml" />
@@ -21,6 +22,7 @@
   <!-- extra sensor proc nodes -->
   <node pkg="habitat_ros" type="range_to_pointcloud" name="velodyne_vlp_16" />
   <node pkg="habitat_ros" type="range_to_laserscan" name="sick_laser" />
+  <node pkg="habitat_ros" type="range_to_laserscan" name="hokuyo" />
 
   <!-- depth image to point clouds -->
   <node pkg="nodelet" type="nodelet" args="manager"

@@ -61,7 +61,7 @@ class Laser(Sensor):
         spec.near = 0.01
         spec.resolution = self.getResolution()
         spec.position = self.position
-        spec.orientation = self.correction_rotation
+        spec.orientation = self.correction_rotation + self.orientation
         spec.sensor_type = habitat_sim.SensorType.DEPTH
         spec.sensor_subtype = habitat_sim.SensorSubType.EQUIRECTANGULAR
 

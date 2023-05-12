@@ -22,7 +22,7 @@ class Sensor(ControllableObject):
         self.pub = rospy.Publisher(self.topic, Image, queue_size=1)
         
         # Used to correct the -z direction of camera projection
-        self.correction_rotation = [0.0,-1.5707963267,0.0]
+        self.correction_rotation = np.asarray([0.0,-1.5707963267,0.0])
         self.correction_matrix = tfs.rotation_matrix(math.pi/2.0, np.asarray([0.0,0.0,1.0]))
 
     def __loadSpec__(self, data):
@@ -31,6 +31,11 @@ class Sensor(ControllableObject):
         self.position,_  = z_up2y_up(position=self.position)
 
         keys = data.keys()
+        if 'orientation' in keys:
+            self.orientation = np.asarray(data["orientation"])
+        else:
+            self.orientation = np.zeros(3, dtype=float)
+            
         if 'topic_frame' in keys:
             self.msg_frame = self.extendTopic(data['topic_frame'])
         else:
