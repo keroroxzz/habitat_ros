@@ -1,1 +1,6 @@
-__pycache__/
+*.pth
+*.pt
+*.pyc
+*.pickle
+.vscode
+__pycache__

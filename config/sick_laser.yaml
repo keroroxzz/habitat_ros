@@ -5,18 +5,18 @@ sick_laser:
   name: "sick_laser"
   frame: "/laser"
   topic: "laser"
-  laserscan_topic: "/scan"
+  laserscan_topic: "/sick_scan2"
   publish_transfromation: True
-  position: [0.15, 0.0, 0.1]
+  position: [0.2, 0.0, 0.1]
 
   sensor_info:
 
     far: 20.0
-    near: 0.5
+    near: 0.10
 
     unit: "deg" # def or rad
-    ang_min: -135
-    ang_max: 135
+    ang_min: -93
+    ang_max: 93
     ang_increment: 0.25
 
     mean_error: 0.0012

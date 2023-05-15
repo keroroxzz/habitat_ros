@@ -5,7 +5,7 @@ hokuyo:
   name: "hokuyo"
   frame: "/laser_hokuyo"
   topic: "laser_hokuyo"
-  laserscan_topic: "/hokuyo_scan"
+  laserscan_topic: "/scan3"
   publish_transfromation: True
   position: [-0.25, 0.0, 0.1]
   orientation: [0.0, 3.14159, 0.0]
