@@ -1,7 +1,7 @@
 <launch>
   <!-- scene configs -->
   <arg name="scene" default="00009"/>
-  <arg name="control_panel" default="false"/>
+  <arg name="control_panel" default="true"/>
   <arg name="dataset" default="$(env HABITAT_DATASET_PATH)"/>
   <param name="habitat_scene" type="str" value="$(arg scene)" />
   <param name="habitat_dataset" type="str" value="$(arg dataset)" />
