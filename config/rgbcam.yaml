@@ -4,7 +4,7 @@ rgbcamera:
   type: "RGB_Camera"
   name: "rgbcamera"
   frame: "/camera_link"
-  topic: "/camera/color/image_raw"
+  topic: "/zed2/zed_node/rgb/image_rect_color"
   topic_frame: "/camera" # explicitly set the msg's frame
   position: [0.1, 0.0, 0.75]
   publish_transfromation: True
