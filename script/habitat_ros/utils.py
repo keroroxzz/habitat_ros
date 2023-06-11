@@ -1,4 +1,5 @@
 import numpy as np
+import numba as nb
 
 # habitat
 from habitat_sim.utils.common import quat_from_angle_axis, quat_to_angle_axis
@@ -54,3 +55,7 @@ def nodeTranslationToNumpy(translation):
     """
 
     return np.asarray([translation.x, translation.y, translation.z])
+
+@nb.jit(nopython=True)
+def noise_numba(src: np.ndarray, mean, max):
+    return np.clip(np.random.randn(src.shape[0], src.shape[1])*mean, -max, max) + src

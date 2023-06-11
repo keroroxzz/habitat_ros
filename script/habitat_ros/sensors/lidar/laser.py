@@ -72,6 +72,6 @@ class Laser(Sensor):
         mid = int(obs_sensor.shape[0]/2)
         crop = obs_sensor[mid:mid+1, self.h_min:self.h_max+1] # plus one to include the last scan
 
-        crop = crop + self.noise(crop.shape)
+        crop = self.noise(crop)
         msg = bridge.cv2_to_imgmsg(crop, encoding="passthrough")
         self.__publish__(self.pub, msg, msg_time)

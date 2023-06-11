@@ -109,8 +109,8 @@ class ControllableObject(ABC):
 
     def publishTF(self, msg_time=None):
 
-        for s in self.subnodes:
-            s.publishTF(msg_time)
+        # for s in self.subnodes:
+        #     s.publishTF(msg_time)
 
         for tf in self.subtfs:
             tf.publish(msg_time)

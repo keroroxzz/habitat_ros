@@ -14,6 +14,8 @@ semantic_camera:
     actions: ["look_up"]
 
   sensor_info:
+    rate: 10
+
     hfov: 90
     far: 100000.0
     near: 0.1

@@ -29,13 +29,12 @@ class HabitatSimROS:
         # add ros node, pub, sub
         rospy.init_node('habitat_ros', anonymous=True)
 
-        self.rate = rospy.Rate(rate)
-        self.fps: float = rate
+        self.last_update = rospy.Time.now()
+        self.sim_rate: float = rate
         robot_name = rospy.get_param("/robot_name", default="oreo")
         self.robot = Robot(robot_name)
         self.robot.loadSensors()
         
-        # input()
         # Init settings
         self.sim_settings = self.make_sim_settings()
         self.agent_id: int = self.sim_settings["default_agent"]
@@ -88,13 +87,19 @@ class HabitatSimROS:
         return habitat_sim.Configuration(sim_cfg, [])
         
     def draw(self) -> None:
-        self.sim.step_world(1.0 / self.fps)
 
-        self.robot.update(rospy.Time.now())
-        self.rate.sleep()
+        for t in self.robot.publish():
+
+            self.robot.publishTF(t)
+            self.robot.publishOdom(t)
+
+            new_time = rospy.Time.now()
+            self.sim.step_world((new_time-self.last_update).to_sec()*self.sim_rate)
+            self.last_update = new_time
+
 
 if __name__ == "__main__":
 
-    simulator = HabitatSimROS(60)
+    simulator = HabitatSimROS(1.0)
     while not rospy.is_shutdown():
         simulator.draw()

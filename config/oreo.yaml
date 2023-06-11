@@ -7,24 +7,28 @@ oreo:
   frame: "/base_link"
 
   # the sensors param namespace
-  sensors: ["velodyne_vlp_16", "rgbcamera", "sick_laser", "hokuyo", "depthcamera", "semantic_camera", "fake_camera"]
+  sensors: ["velodyne_vlp_16", "rgbcamera", "sick_laser", "hokuyo", "depthcamera", "fake_camera"]
+
+  # uncomment this line to get ground-truth semantic label
+  # sensors: ["velodyne_vlp_16", "rgbcamera", "sick_laser", "hokuyo", "depthcamera", "semantic_camera", "fake_camera"]
 
   translation: [0.0, 0.0, 0.5]
   rotation: [0.0, 0.0, 0.0, 1.0]
 
   # dynamic properties
   dynamic:
-    mode: "legacy" # dynamic: physical movement, legacy: override velocity
-    friction_coefficient: 0.0
-    angular_damping: 0.5
-    linear_damping: 0.65
-    standing_force: 500.0 # constantly apply force downward to prevent falling
+    mode: "dynamic" # dynamic: physical movement, legacy: override velocity
+    friction_coefficient: 0.01
+    angular_damping: 0.1
+    linear_damping: 0.1
+    standing_force: 100.0 # constantly apply force downward to prevent falling
 
   # the first name is the package name
   model_path: "habitat_ros/robot/oreo/oreo"
 
   cmd_topic: "/cmd_vel"
 
+  # switch to true to publish ground-truth tf between map and base_link
   publish_transfromation: false
 
   odom:
