@@ -14,7 +14,7 @@ class RGBCamera(Camera):
         msg = bridge.cv2_to_imgmsg(obs_sensor, encoding="bgr8")
 
         if not self.pub_compressed is None:
-            msg_cp = bridge.cv2_to_compressed_imgmsg(obs_sensor, dst_format="jpg")
+            msg_cp = bridge.cv2_to_compressed_imgmsg(obs_sensor, dst_format="bmp")
             self.__publish__(self.pub_compressed, msg_cp, msg_time)
 
         self.__publish__(self.pub, msg, msg_time)

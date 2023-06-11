@@ -1,4 +1,6 @@
 import os
+import time
+import threading
 import numpy as np
 from typing import Dict, List
 
@@ -32,6 +34,7 @@ class Robot(ControllableObject):
         super().__init__(name, 'map', yaml_file=None)
         
         self.sim = None
+        self.last_cmd = rospy.Time.now()
         self.cmd_sub = rospy.Subscriber(self.cmd_topic, Twist, self.cmd_cb, queue_size=10)
         self.odom_pub = rospy.Publisher(self.odom_topic, Odometry, queue_size=10)
 
@@ -62,8 +65,8 @@ class Robot(ControllableObject):
 
     def getVelocity(self):
 
-        lin_vel = self.vel_control.linear_velocity
-        ang_vel = self.vel_control.angular_velocity
+        lin_vel = self.model.linear_velocity
+        ang_vel = self.model.angular_velocity
         lin_vel,_ = y_up2z_up(position=np.asarray([lin_vel[0], lin_vel[1], lin_vel[2]]))
         ang_vel,_ = y_up2z_up(position=np.asarray([ang_vel[0], ang_vel[1], ang_vel[2]]))
         return lin_vel, ang_vel
@@ -138,7 +141,7 @@ class Robot(ControllableObject):
     def setAgentNode(self, agent_node):
         self.__setNode__(agent_node)
         for sensor in self.subnodes:
-            sensor.setSensorNode(self.node)
+            sensor.setSensorNode(self.node, self.sim._sensors[sensor.uuid])
 
     ## Load model asset
     def loadModel(self, sim):
@@ -151,17 +154,18 @@ class Robot(ControllableObject):
         self.model.translation = self.model_translation
         self.model.rotation = quat_to_magnum(quat_from_coeffs(self.model_rotation))
         
+        self.model.restitution_coefficient = 0.0
         self.model.friction_coefficient = self.friction_coefficient
         self.model.angular_damping = self.angular_damping
         self.model.linear_damping = self.linear_damping
-        self.vel_control = self.model.velocity_control
-        self.vel_control.lin_vel_is_local = True
-        self.vel_control.ang_vel_is_local = True
+        # self.vel_control = self.model.velocity_control
+        # self.vel_control.lin_vel_is_local = True
+        # self.vel_control.ang_vel_is_local = True
 
-        # using the vel controller 
-        if self.mode=='legacy':
-            self.vel_control.controlling_lin_vel = True
-            self.vel_control.controlling_ang_vel = True
+        # # using the vel controller 
+        # # if self.mode=='legacy':
+        # #     self.vel_control.controlling_lin_vel = True
+        # #     self.vel_control.controlling_ang_vel = True
 
     ## Sensors
     def loadSensors(self):
@@ -184,43 +188,48 @@ class Robot(ControllableObject):
 
     def setVel(self, lin_vel, ang_vel):
 
-        self.model.apply_force(force=mn.Vector3(0.0, -self.standing_force, 0.0), relative_position=mn.Vector3(0.0, 0.0, 0.0))
+        # self.model.apply_force(force=mn.Vector3(0.0, -self.standing_force, 0.0), relative_position=mn.Vector3(0.0, 0.0, 0.0))
 
         if self.mode=='legacy':
-            lin_vel,_  = z_up2y_up(position=lin_vel)
-            ang_vel,_  = z_up2y_up(position=ang_vel)
-            self.vel_control.linear_velocity = lin_vel
-            self.vel_control.angular_velocity = ang_vel
+            self.model.linear_velocity = self.model.rotation.transform_vector(mn.Vector3(lin_vel[0], lin_vel[2], -lin_vel[1]))
+            self.model.angular_velocity = mn.Vector3(0.0, ang_vel[2], 0.0)
 
         elif self.mode=='dynamic':
             
-            lin,ang = self.getVelocity()
+            # print('tar',lin_vel, ang_vel)
+            vel_loc = self.model.rotation.inverted().transform_vector(self.model.linear_velocity)
+            vel = self.model.rotation.transform_vector(mn.Vector3(lin_vel[0]-vel_loc.x, 0.0, -lin_vel[1]-vel_loc.z))*50.0
 
-            lin_vel = lin_vel-lin
-            ang_vel = ang_vel-ang
+            ang_loc = self.model.rotation.inverted().transform_vector(self.model.angular_velocity)
+            ang_ex = self.model.rotation.transform_vector(mn.Vector3(-1.0, 0.0, 0.0))
+            ang = self.model.rotation.transform_vector(mn.Vector3(0.0, 0.0, ang_vel[2]-ang_loc.y))
 
-            vel = self.model.rotation.transform_vector(mn.Vector3(lin_vel[0], lin_vel[2], -lin_vel[1]))*50.0
             self.model.apply_force(force=vel, relative_position=mn.Vector3(0.0, 0.0, 0.0))
-            self.model.apply_force(force=mn.Vector3(ang_vel[2], 0.0, 0.0), relative_position=mn.Vector3(0.0, 0.0, 1.0))
-            self.model.apply_force(force=mn.Vector3(-ang_vel[2], 0.0, 0.0), relative_position=mn.Vector3(0.0, 0.0, -1.0))
+            self.model.apply_force(force=ang, relative_position=ang_ex)
+            self.model.apply_force(force=-ang, relative_position=-ang_ex)
+
+            # print("%.4f, %.4f, %.4f"%(lin_vel[0]-vel_loc.x, -lin_vel[1]-vel_loc.z, ang_vel[2]-ang_loc.y))
+
+            # print('cur', lin,ang)
 
 
     def cmd_cb(self, msg: Twist):
         self.setVel(
             np.asarray([msg.linear.x,msg.linear.y,msg.linear.z]),
             np.asarray([msg.angular.x,msg.angular.y,msg.angular.z]))
+        self.last_cmd = rospy.Time.now()
 
-    def publish(self, msg_time=None):
-        observation = self.sim.get_sensor_observations()
+    def publish(self):
+
         for s in self.subnodes:
-            s.publish(observation, msg_time)
+            msg_time = rospy.Time.now()
+            s.updateObservation(msg_time)
+            yield msg_time
+
+        if (rospy.Time.now() - self.last_cmd).to_sec()>0.2:
+            self.setVel(np.zeros(3), np.zeros(3))
 
     def publishOdom(self, msg_time=None):
         self.updateOdom()
         self.odom.header.stamp = rospy.Time.now() if msg_time is None else msg_time
         self.odom_pub.publish(self.odom)
-
-    def update(self, time):
-        self.publishTF(time)
-        self.publish(time)
-        self.publishOdom(time)

@@ -80,6 +80,6 @@ class LiDAR(Sensor):
         obs_sensor = self.getObservation(observation)
         crop = obs_sensor[self.v_bound:self.v_bound+self.vres:self.stride_v, self.h_bound:self.h_bound+self.hres]
         
-        crop = crop + self.noise(crop.shape)
+        crop = self.noise(crop)
         msg = bridge.cv2_to_imgmsg(crop, encoding="passthrough")
         self.__publish__(self.pub, msg, msg_time)

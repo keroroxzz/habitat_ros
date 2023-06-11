@@ -1,5 +1,7 @@
 import math
 import numpy as np
+import numba as nb
+import threading
 from abc import abstractmethod
 
 # ros libs
@@ -25,10 +27,17 @@ class Sensor(ControllableObject):
         self.correction_rotation = np.asarray([0.0,-1.5707963267,0.0])
         self.correction_matrix = tfs.rotation_matrix(math.pi/2.0, np.asarray([0.0,0.0,1.0]))
 
+        # individual thread publishing the updated observations
+        self.updated = False
+        self.thread = threading.Thread(target=self.update)
+        self.thread.start()
+
     def __loadSpec__(self, data):
         self.topic = self.extendTopic(data["topic"])
         self.position = np.asarray(data["position"])
         self.position,_  = z_up2y_up(position=self.position)
+
+        self.Rate = rospy.Rate(data['sensor_info']['rate'])
 
         keys = data.keys()
         if 'orientation' in keys:
@@ -41,19 +50,22 @@ class Sensor(ControllableObject):
         else:
             self.msg_frame = self.frame
 
+    def __setSensor__(self, sensor:habitat_sim.simulator.Sensor):
+        self.sensor = sensor
 
-    def setSensorNode(self, agent_node):
+    def setSensorNode(self, agent_node, sensor):
         node = agent_node.node_sensor_suite.get(self.uuid).node
         self.__setNode__(node)
+        self.__setSensor__(sensor)
 
     def uuid(self):
         return self.uuid
 
-    def getObservation(self, observation):
-        return observation[self.uuid]
-
-    def noise(self, shape):
-        return np.clip(np.random.randn(shape[0], shape[1])*self.meanerror, -self.maxerror, self.maxerror)
+    def getObservation(self, none):
+        return self.observation
+    
+    def noise(self, src: np.ndarray):
+        return noise_numba(src, self.meanerror, self.maxerror)
 
     def __tfCorrection__(self, q_coeff):
         """
@@ -74,4 +86,26 @@ class Sensor(ControllableObject):
 
     @abstractmethod
     def publish(self, observation, msg_time = None):
+        """
+        observation is deprecated...
+        """
         pass
+
+    def updateObservation(self, msg_time):
+        if not self.updated:
+            self.sensor.draw_observation()
+            self.observation =  self.sensor.get_observation()
+            self.observation_time = rospy.Time.now() if msg_time is None else msg_time
+            self.updated = True
+
+    def update(self):
+        while not rospy.is_shutdown():
+            if hasattr(self, 'observation') and self.updated:
+                # if not self.updated:
+                #     self.observation_time = rospy.Time.now()
+                self.updated = False
+                self.publish(None, self.observation_time)
+                self.publishTF(self.observation_time)
+                self.Rate.sleep()
+            else:
+                rospy.Rate(200).sleep()
