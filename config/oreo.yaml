@@ -12,19 +12,31 @@ oreo:
   # uncomment this line to get ground-truth semantic label
   # sensors: ["velodyne_vlp_16", "rgbcamera", "sick_laser", "hokuyo", "depthcamera", "semantic_camera", "fake_camera"]
 
+  # initial pose
   translation: [0.0, 0.0, 0.5]
   rotation: [0.0, 0.0, 0.0, 1.0]
 
   # dynamic properties
   dynamic:
     mode: "dynamic" # dynamic: physical movement, legacy: override velocity
-    friction_coefficient: 0.01
-    angular_damping: 0.1
-    linear_damping: 0.1
-    standing_force: 100.0 # constantly apply force downward to prevent falling
 
-  # the first name is the package name
-  model_path: "habitat_ros/robot/oreo/oreo"
+    navmesh: false  # moving on the navmesh only
+    navmesh_offset: -0.05 # z-offset
+    lock_rotation: false # lock the rotation in x and y, recommend true
+
+    friction_coefficient: 0.1
+    angular_damping: 0.3
+    linear_damping: 0.3
+
+  # geometrical properties for navmesh generation and collision, will be overwritten if collidable = True
+  geometric:
+    height: 1.0
+    radius: 0.24
+
+  # import 3D model
+  model:
+    model_path: "habitat_ros/robot/oreo/oreo" # the first section is the package name where the robot is placed in
+    collidable: true  # recomment false if navmesh = true
 
   cmd_topic: "/cmd_vel"
 
@@ -37,11 +49,6 @@ oreo:
     child_frame: "/base_link"
     
   tf_links:
-    # base_link:
-    #   frame: "/base_link"
-    #   position: [0.0, 0.0, 0.0]
-    #   orientation: [0.0, 0.0, 0.0, 1.0]
-
     base_footprint:
       frame: "/base_footprint"
       position: [0.0, 0.0, 0.0]

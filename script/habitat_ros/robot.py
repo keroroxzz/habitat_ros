@@ -34,26 +34,34 @@ class Robot(ControllableObject):
         super().__init__(name, 'map', yaml_file=None)
         
         self.sim = None
-        self.last_cmd = rospy.Time.now()
+        self.target_vel = Twist()
+        self.last_cmd_time = rospy.Time.now()
         self.cmd_sub = rospy.Subscriber(self.cmd_topic, Twist, self.cmd_cb, queue_size=10)
         self.odom_pub = rospy.Publisher(self.odom_topic, Odometry, queue_size=10)
 
     def __loadSpec__(self, data):
 
-        path = data["model_path"].split('/')
+        path = data["model"]["model_path"].split('/')
         pkg_path = rospkg.RosPack().get_path(path[0])
-        model_path = data["model_path"][len(path[0])+1:]
+        model_path = data["model"]["model_path"][len(path[0])+1:]
         self.model_path =  os.path.join(pkg_path, model_path)
         rospy.logdebug("Load robot model from: " + self.model_path)
+
+        self.collidable =  data["model"]["collidable"] if 'collidable' in data['model'].keys() else True
         
         self.model_translation = np.asarray(data["translation"])[(1,2,0),]
         self.model_rotation = data["rotation"]
 
-        self.standing_force = data["dynamic"]["standing_force"]
         self.mode = data["dynamic"]["mode"]
+        self.navmesh = data["dynamic"]["navmesh"]
+        self.navmesh_offset = mn.Vector3(0.0,data["dynamic"]["navmesh_offset"],0.0)
+        self.lock_rotation = data["dynamic"]["lock_rotation"]
         self.friction_coefficient = data["dynamic"]["friction_coefficient"]
         self.angular_damping = data["dynamic"]["angular_damping"]
         self.linear_damping = data["dynamic"]["linear_damping"]
+
+        self.height = data["geometric"]["height"]
+        self.radius = data["geometric"]["radius"]
 
         self.cmd_topic = self.extendTopic(data["cmd_topic"])
 
@@ -132,6 +140,8 @@ class Robot(ControllableObject):
         agent_config = habitat_sim.agent.AgentConfiguration(
             sensor_specifications=sensor_spec,
             action_space=action_space,
+            height=self.height,
+            radius=self.radius
         )
         return agent_config
 
@@ -154,10 +164,16 @@ class Robot(ControllableObject):
         self.model.translation = self.model_translation
         self.model.rotation = quat_to_magnum(quat_from_coeffs(self.model_rotation))
         
-        self.model.restitution_coefficient = 0.0
+        # physical parameters
+        self.model.collidable = self.collidable
+        self.model.restitution_coefficient = 0.1
         self.model.friction_coefficient = self.friction_coefficient
         self.model.angular_damping = self.angular_damping
         self.model.linear_damping = self.linear_damping
+
+        # init model state
+        self.prev_state = self.model.rigid_state
+        
         # self.vel_control = self.model.velocity_control
         # self.vel_control.lin_vel_is_local = True
         # self.vel_control.ang_vel_is_local = True
@@ -186,48 +202,63 @@ class Robot(ControllableObject):
             else:
                 rospy.logdebug(f"Unknown sensor type {type}.")
 
-    def setVel(self, lin_vel, ang_vel):
+    def updateDynamic(self):
 
-        # self.model.apply_force(force=mn.Vector3(0.0, -self.standing_force, 0.0), relative_position=mn.Vector3(0.0, 0.0, 0.0))
+        lin_vel = np.asarray([self.target_vel.linear.x,self.target_vel.linear.y,self.target_vel.linear.z])
+        ang_vel = np.asarray([self.target_vel.angular.x,self.target_vel.angular.y,self.target_vel.angular.z])
+
+        # stop exert force if the robot tilts.
+        if not self.lock_rotation:
+            robot_z = self.model.rotation.transform_vector(mn.Vector3(0.0, 1.0, 0.0)).y
+            if np.arccos(robot_z)>0.075:
+                return
 
         if self.mode=='legacy':
             self.model.linear_velocity = self.model.rotation.transform_vector(mn.Vector3(lin_vel[0], lin_vel[2], -lin_vel[1]))
-            self.model.angular_velocity = mn.Vector3(0.0, ang_vel[2], 0.0)
+            self.model.angular_velocity = self.model.rotation.transform_vector(mn.Vector3(0.0, ang_vel[2], 0.0))
 
         elif self.mode=='dynamic':
             
-            # print('tar',lin_vel, ang_vel)
             vel_loc = self.model.rotation.inverted().transform_vector(self.model.linear_velocity)
             vel = self.model.rotation.transform_vector(mn.Vector3(lin_vel[0]-vel_loc.x, 0.0, -lin_vel[1]-vel_loc.z))*50.0
 
-            ang_loc = self.model.rotation.inverted().transform_vector(self.model.angular_velocity)
-            ang_ex = self.model.rotation.transform_vector(mn.Vector3(-1.0, 0.0, 0.0))
-            ang = self.model.rotation.transform_vector(mn.Vector3(0.0, 0.0, ang_vel[2]-ang_loc.y))
+            ang_loc = self.model.rotation.inverted().transform_vector(self.model.angular_velocity)*1.5
+            torque = self.model.rotation.transform_vector(mn.Vector3(0.0, ang_vel[2]-ang_loc.y, 0.0))*3.0
 
             self.model.apply_force(force=vel, relative_position=mn.Vector3(0.0, 0.0, 0.0))
-            self.model.apply_force(force=ang, relative_position=ang_ex)
-            self.model.apply_force(force=-ang, relative_position=-ang_ex)
+            self.model.apply_torque(torque=torque)
 
-            # print("%.4f, %.4f, %.4f"%(lin_vel[0]-vel_loc.x, -lin_vel[1]-vel_loc.z, ang_vel[2]-ang_loc.y))
+        # constrain the position on the navmesh
+        if self.navmesh:
+            new_state = self.model.rigid_state
+            self.model.translation = self.sim.step_filter(self.prev_state.translation, new_state.translation) + self.navmesh_offset
+            self.prev_state = new_state
 
-            # print('cur', lin,ang)
-
+        # constrain the rotation to be one dimensional
+        if self.lock_rotation:
+            rot_mat_z = self.model.rotation.to_matrix()
+            norm = np.linalg.norm(np.array((rot_mat_z[0,0], rot_mat_z[0,2])))
+            rot_mat_z[0,1]=rot_mat_z[1,0]=rot_mat_z[2,1]=rot_mat_z[1,2]=0.0
+            rot_mat_z[1,1]=1.0
+            rot_mat_z[0,0]/=norm
+            rot_mat_z[0,2]/=norm
+            rot_mat_z[2,2]=rot_mat_z[0,0]
+            rot_mat_z[2,0]=-rot_mat_z[0,2]
+            self.model.rotation = mn.Quaternion.from_matrix(rot_mat_z)
 
     def cmd_cb(self, msg: Twist):
-        self.setVel(
-            np.asarray([msg.linear.x,msg.linear.y,msg.linear.z]),
-            np.asarray([msg.angular.x,msg.angular.y,msg.angular.z]))
-        self.last_cmd = rospy.Time.now()
+        self.target_vel=msg
+        self.last_cmd_time = rospy.Time.now()
 
     def publish(self):
 
         for s in self.subnodes:
             msg_time = rospy.Time.now()
-            s.updateObservation(msg_time)
-            yield msg_time
+            if s.updateObservation(msg_time):
+                yield msg_time
 
-        if (rospy.Time.now() - self.last_cmd).to_sec()>0.2:
-            self.setVel(np.zeros(3), np.zeros(3))
+        if (rospy.Time.now() - self.last_cmd_time).to_sec()>0.2:
+            self.target_vel=Twist()
 
     def publishOdom(self, msg_time=None):
         self.updateOdom()

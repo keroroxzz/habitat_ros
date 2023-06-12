@@ -28,7 +28,10 @@ class Sensor(ControllableObject):
         self.correction_matrix = tfs.rotation_matrix(math.pi/2.0, np.asarray([0.0,0.0,1.0]))
 
         # individual thread publishing the updated observations
-        self.updated = False
+        self.mutex = threading.Lock()
+        self.mutex.acquire()
+        self.observation = None
+        self.observation_time = rospy.Time.now()
         self.thread = threading.Thread(target=self.update)
         self.thread.start()
 
@@ -92,20 +95,23 @@ class Sensor(ControllableObject):
         pass
 
     def updateObservation(self, msg_time):
-        if not self.updated:
-            self.sensor.draw_observation()
-            self.observation =  self.sensor.get_observation()
-            self.observation_time = rospy.Time.now() if msg_time is None else msg_time
-            self.updated = True
+        
+        if self.observation is not None:
+            return False
+        self.sensor.draw_observation()
+        self.observation =  self.sensor.get_observation()
+        self.observation_time = rospy.Time.now() if msg_time is None else msg_time
+        if self.mutex.locked():
+            self.mutex.release()
+        return True
 
     def update(self):
+
         while not rospy.is_shutdown():
-            if hasattr(self, 'observation') and self.updated:
-                # if not self.updated:
-                #     self.observation_time = rospy.Time.now()
-                self.updated = False
-                self.publish(None, self.observation_time)
-                self.publishTF(self.observation_time)
-                self.Rate.sleep()
-            else:
-                rospy.Rate(200).sleep()
+
+            self.mutex.acquire()
+            self.publish(None, self.observation_time)
+            self.publishTF(self.observation_time)
+            self.Rate.sleep()
+            self.observation = None
+            

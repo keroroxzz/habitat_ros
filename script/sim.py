@@ -30,6 +30,7 @@ class HabitatSimROS:
         rospy.init_node('habitat_ros', anonymous=True)
 
         self.last_update = rospy.Time.now()
+        self.subsetp = 50
         self.sim_rate: float = rate
         robot_name = rospy.get_param("/robot_name", default="oreo")
         self.robot = Robot(robot_name)
@@ -94,7 +95,11 @@ class HabitatSimROS:
             self.robot.publishOdom(t)
 
             new_time = rospy.Time.now()
-            self.sim.step_world((new_time-self.last_update).to_sec()*self.sim_rate)
+            
+            for i in range(self.subsetp):
+                self.sim.step_world((new_time-self.last_update).to_sec()*self.sim_rate/self.subsetp)
+                self.robot.updateDynamic()
+
             self.last_update = new_time
 
 
