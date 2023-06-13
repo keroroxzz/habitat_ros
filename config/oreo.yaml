@@ -6,9 +6,6 @@ oreo:
   name: "oreo"
   frame: "/base_link"
 
-  # the sensors param namespace
-  sensors: ["velodyne_vlp_16", "rgbcamera", "sick_laser", "hokuyo", "depthcamera", "fake_camera"]
-
   # uncomment this line to get ground-truth semantic label
   # sensors: ["velodyne_vlp_16", "rgbcamera", "sick_laser", "hokuyo", "depthcamera", "semantic_camera", "fake_camera"]
 

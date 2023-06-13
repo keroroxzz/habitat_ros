@@ -58,4 +58,43 @@ def nodeTranslationToNumpy(translation):
 
 @nb.jit(nopython=True)
 def noise_numba(src: np.ndarray, mean, max):
-    return np.clip(np.random.randn(src.shape[0], src.shape[1])*mean, -max, max) + src
+    return np.clip(np.random.randn(*src.shape).astype(src.dtype)*mean, -max, max) + src
+
+@nb.jit(nopython=True)
+def raw_to_laser_numba(raw: np.ndarray, cor: np.ndarray, min, max):
+
+    d = raw/cor
+    d[d<min] = 0.0
+    d[d>max] = 0.0
+
+    return d
+
+@nb.jit(nopython=True)
+def raw_to_lidar_numba(raw: np.ndarray = np.array([[]]), vec: np.ndarray = np.array([[[]]]), cos:np.ndarray = np.array([[]]), min=0.0, max=100.0):
+
+    p = raw.reshape(raw.shape[0],raw.shape[1],1)*vec
+    d = raw/cos
+    id = np.bitwise_and(d>=min,d<=max).nonzero()
+
+    return p, id
+
+@nb.jit()
+def lidar_correction(hfov, vfov, hres, vres):
+
+    x = np.float32(np.mgrid[0:vres, 0:hres])
+    x[1] = -(x[1]/hres - 0.5)*hfov
+    x[0] = -(x[0]/vres - 0.5)*vfov
+    x *= np.pi/180.0
+
+    rx = np.cos(x[1])*np.cos(x[0])
+    ry = np.sin(x[1])*np.cos(x[0])
+    rz = np.sin(x[0])
+
+    ax = np.abs(rx)
+    ay = np.abs(ry)
+    az = np.abs(rz)
+
+    dot = np.max(np.stack((ax, ay, az), axis=2), axis=2)
+    vector = np.stack((rx, ry, rz), axis=2)/dot.reshape(dot.shape[0],dot.shape[1],1)
+
+    return dot, vector

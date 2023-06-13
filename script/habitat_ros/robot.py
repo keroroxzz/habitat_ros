@@ -173,22 +173,13 @@ class Robot(ControllableObject):
 
         # init model state
         self.prev_state = self.model.rigid_state
-        
-        # self.vel_control = self.model.velocity_control
-        # self.vel_control.lin_vel_is_local = True
-        # self.vel_control.ang_vel_is_local = True
-
-        # # using the vel controller 
-        # # if self.mode=='legacy':
-        # #     self.vel_control.controlling_lin_vel = True
-        # #     self.vel_control.controlling_ang_vel = True
 
     ## Sensors
     def loadSensors(self):
         self.subnodes = []
-        for s in self.data['sensors']:
+        for s in self.data['sensors'].values():
 
-            type=rospy.get_param(s+'/type')
+            type=s['type']
             if type == "RGB_Camera":
                 self.subnodes.append(RGBCamera(s, self.frame))
             elif type == "3D_LiDAR":
@@ -251,11 +242,14 @@ class Robot(ControllableObject):
         self.last_cmd_time = rospy.Time.now()
 
     def publish(self):
-
+        # log="\n"
         for s in self.subnodes:
             msg_time = rospy.Time.now()
+            # log += f"{s.uuid}: \t\t {1000*s.obs_time:.2f} \t {1000*s.pub_time:.2f} \t {s.hz:.2f} \t {s.hz_:.2f}\n"
             if s.updateObservation(msg_time):
                 yield msg_time
+
+        # rospy.logdebug(log)
 
         if (rospy.Time.now() - self.last_cmd_time).to_sec()>0.2:
             self.target_vel=Twist()

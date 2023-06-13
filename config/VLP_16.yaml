@@ -4,8 +4,7 @@ velodyne_vlp_16:
   type: "3D_LiDAR"
   name: "velodyne_vlp_16"
   frame: "lidar"
-  topic: "range"
-  point_cloud_topic: "/velodyne_points"
+  topic: "/velodyne_points"
   publish_transfromation: True
   position: [0.0, 0.0, 1.1]
 
@@ -19,7 +18,7 @@ velodyne_vlp_16:
 
     mean_error: 0.02
     max_error: 0.03
-    rate: 20
+    rate: 5
 
     resolution:
       vertical: 16

@@ -5,24 +5,24 @@
   <arg name="dataset" default="$(env HABITAT_DATASET_PATH)"/>
   <param name="habitat_scene" type="str" value="$(arg scene)" />
   <param name="habitat_dataset" type="str" value="$(arg dataset)" />
-  
+
+  <!-- a fake node for clearing the params -->
+  <node name="oreo" pkg="habitat_ros" type="fake.py" clear_params="true" />
+
   <!-- robot configs -->
+  <!-- add config files of sensors and the robot here... -->
+  <!-- set the namespace of the sensors as "{robot namespace}/sensors/" to attach them-->
   <rosparam command="load" file="$(find habitat_ros)/config/oreo.yaml" />
-  <rosparam command="load" file="$(find habitat_ros)/config/VLP_16.yaml" />
-  <rosparam command="load" file="$(find habitat_ros)/config/hokuyo.yaml" />
-  <rosparam command="load" file="$(find habitat_ros)/config/rgbcam.yaml" />
-  <rosparam command="load" file="$(find habitat_ros)/config/depth_camera.yaml" />
-  <rosparam command="load" file="$(find habitat_ros)/config/sick_laser.yaml" />
-  <rosparam command="load" file="$(find habitat_ros)/config/semantic_camera.yaml" />
-  <rosparam command="load" file="$(find habitat_ros)/config/fake_camera.yaml" />
+  <rosparam command="load" file="$(find habitat_ros)/config/VLP_16.yaml" ns="oreo/sensors/"/>
+  <rosparam command="load" file="$(find habitat_ros)/config/hokuyo.yaml" ns="oreo/sensors/"/>
+  <rosparam command="load" file="$(find habitat_ros)/config/rgbcam.yaml" ns="oreo/sensors/"/>
+  <!-- <rosparam command="load" file="$(find habitat_ros)/config/depth_camera.yaml" ns="oreo/sensors/"/> -->
+  <rosparam command="load" file="$(find habitat_ros)/config/sick_laser.yaml" ns="oreo/sensors/"/>
+  <!-- <rosparam command="load" file="$(find habitat_ros)/config/semantic_camera.yaml"  ns="oreo/sensors/"/> -->
+  <rosparam command="load" file="$(find habitat_ros)/config/fake_camera.yaml" ns="oreo/sensors/"/>
   
   <!-- simulator -->
   <node pkg="habitat_ros" type="sim.py" name="habitat_simulator" output="screen"/>
-
-  <!-- extra sensor proc nodes -->
-  <node pkg="habitat_ros" type="range_to_pointcloud" name="velodyne_vlp_16" />
-  <node pkg="habitat_ros" type="range_to_laserscan" name="sick_laser" />
-  <node pkg="habitat_ros" type="range_to_laserscan" name="hokuyo" />
 
   <!-- depth image to point clouds -->
   <node pkg="nodelet" type="nodelet" args="manager"
@@ -38,7 +38,7 @@
 
   <group if="$(arg control_panel)">
     <node pkg="habitat_ros" type="control.py" name="control">
-      <remap from="camera" to="fake_camera/compressed"/>
+      <param name="camera" value="fake_camera"/>
     </node>
   </group>
 

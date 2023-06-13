@@ -7,8 +7,8 @@ fake_camera:
   topic: "/fake_camera"
   topic_frame: "fake_camera_link" # explicitly set the msg's frame
   position: [-0.7, 0.0, 0.8]
-  publish_transfromation: True
-  pub_compressed: True #publish compressed image
+  publish_transfromation: False
+  pub_compressed: False #publish compressed image
   
   # actuation topics and corresponding actions
   actuation:
@@ -18,14 +18,14 @@ fake_camera:
   camera_info_topic: "camera_info"
   sensor_info:
   
-    rate: 30
+    rate: 15
     
     hfov: 90
     far: 100000.0
     near: 0.1
     
-    image_width: 640
-    image_height: 480
+    image_width: 400
+    image_height: 300
     camera_name: camera
 
     distortion_model: plumb_bob

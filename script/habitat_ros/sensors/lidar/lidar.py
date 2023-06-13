@@ -13,7 +13,7 @@ import habitat_sim
 import rospy
 
 # ros messages
-from sensor_msgs.msg import Image
+from sensor_msgs.msg import PointCloud2, PointField
 
 from habitat_ros.utils import *
 from habitat_ros.transformation import *
@@ -26,7 +26,7 @@ class LiDAR(Sensor):
 
         # Load sensor infromation
         self._init_params(self.data)
-        self.pub = rospy.Publisher(self.topic, Image, queue_size=1)
+        self.pub = rospy.Publisher(self.topic, PointCloud2, queue_size=1)
 
     def _init_params(self, data):
         sensor_info = data["sensor_info"]
@@ -35,6 +35,7 @@ class LiDAR(Sensor):
         self.vfov = sensor_info["vfov"]
         self.hfov = sensor_info["hfov"]
         self.vres = sensor_info["resolution"]["vertical"]
+        self.vres_raw = sensor_info["resolution"]["vertical"]
         self.hres = sensor_info["resolution"]["horizontal"]
         self.meanerror = sensor_info["mean_error"]
         self.maxerror = sensor_info["max_error"]
@@ -53,6 +54,18 @@ class LiDAR(Sensor):
 
         self.v_bound = int((self.res_v - self.vres)/2)
         self.h_bound = int((self.res_h - self.hres)/2)
+
+        self.cosine_field, self.vector_field = self.correctionFactor()
+
+        self.msg = PointCloud2()
+        self.msg.height = 1
+        self.msg.fields = [
+            PointField('x', 0, PointField.FLOAT32, 1),
+            PointField('y', 4, PointField.FLOAT32, 1),
+            PointField('z', 8, PointField.FLOAT32, 1)]
+        self.msg.point_step = 12
+        self.msg.is_bigendian = False
+        self.msg.is_dense = False
 
     def uuid(self):
 
@@ -76,10 +89,20 @@ class LiDAR(Sensor):
 
         sensor_list.append(spec)
 
+    def correctionFactor(self):
+
+        return lidar_correction(self.hfov, self.vfov, self.hres, self.vres_raw)
+
     def publish(self, observation, msg_time = None):
         obs_sensor = self.getObservation(observation)
         crop = obs_sensor[self.v_bound:self.v_bound+self.vres:self.stride_v, self.h_bound:self.h_bound+self.hres]
         
         crop = self.noise(crop)
-        msg = bridge.cv2_to_imgmsg(crop, encoding="passthrough")
-        self.__publish__(self.pub, msg, msg_time)
+        points, ids = raw_to_lidar_numba(crop, self.vector_field, self.cosine_field, self.near, self.far)
+
+        points = points[ids]
+        self.msg.width = points.shape[0]
+        self.msg.row_step = self.msg.point_step * self.msg.width
+        self.msg.data = np.float32(points).tostring()
+
+        self.__publish__(self.pub, self.msg, msg_time)

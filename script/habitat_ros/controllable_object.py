@@ -37,14 +37,12 @@ class ControllableObject(ABC):
         return extended[1:]
 
     ## Param loading
-    def __loadParam__(self, name, parent_frame, filename=None):
+    def __loadParam__(self, data, parent_frame, filename=None):
 
-        rospy.logdebug(f"Loading parameters of {name} from ROS parameters...")
+        rospy.logdebug(f"Loading parameters of {data['name']} from ROS parameters...")
         if filename:
             with open(filename, "r") as fp:
-                data = yaml.load(fp, yaml.Loader)[name]
-        else:
-            data = rospy.get_param(name)
+                data = yaml.load(fp, yaml.Loader).values()[0]
 
         self.uuid = data["name"]
         self.type = data["type"]

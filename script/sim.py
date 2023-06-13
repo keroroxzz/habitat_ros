@@ -24,16 +24,18 @@ enable_physic = True
 
 
 class HabitatSimROS:
+
+    subsetp = 3            # 3 steps per update
+    max_step_time = 0.1    # maximum step time to prevent wrong simulation
+
     def __init__(self, rate) -> None:
 
-        # add ros node, pub, sub
-        rospy.init_node('habitat_ros', anonymous=True)
+        self.ms_sleep = rospy.Rate(1000)
 
-        self.last_update = rospy.Time.now()
-        self.subsetp = 50
-        self.sim_rate: float = rate
+        self.sim_rate: float = rate/self.subsetp
         robot_name = rospy.get_param("/robot_name", default="oreo")
-        self.robot = Robot(robot_name)
+        robot_spec = rospy.get_param(f"/{robot_name}", default="oreo")
+        self.robot = Robot(robot_spec)
         self.robot.loadSensors()
         
         # Init settings
@@ -47,9 +49,13 @@ class HabitatSimROS:
         self.default_agent = self.sim.get_agent(self.agent_id)
         self.agent_body_node = self.default_agent.scene_node
 
+        # bind the simulator to the robot
         self.robot.bindSimulator(self.sim)
         self.robot.setAgentNode(self.agent_body_node)
         self.robot.loadModel(self.sim)
+
+        # must put at the last line in init to prevent counting init time
+        self.last_update = rospy.Time.now()
 
 
     ## Simulation configuratrion and setting functions ##
@@ -86,25 +92,29 @@ class HabitatSimROS:
         sim_cfg.enable_physics = settings["enable_physics"]
 
         return habitat_sim.Configuration(sim_cfg, [])
-        
+    
     def draw(self) -> None:
 
         for t in self.robot.publish():
 
             self.robot.publishTF(t)
-            self.robot.publishOdom(t)
 
             new_time = rospy.Time.now()
-            
+            step_time = min((new_time-self.last_update).to_sec()*self.sim_rate, self.max_step_time)
+
             for i in range(self.subsetp):
-                self.sim.step_world((new_time-self.last_update).to_sec()*self.sim_rate/self.subsetp)
+                self.sim.step_world(step_time)
                 self.robot.updateDynamic()
 
             self.last_update = new_time
 
+        self.robot.publishOdom(self.last_update)
+        self.ms_sleep.sleep()
+
 
 if __name__ == "__main__":
 
+    rospy.init_node('habitat_ros', anonymous=True, log_level=rospy.DEBUG)
     simulator = HabitatSimROS(1.0)
     while not rospy.is_shutdown():
         simulator.draw()

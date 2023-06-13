@@ -3,6 +3,8 @@ Equirectangular Depth to Point Cloud Converter
 Author: Biran Tu
 
 This is the source code for the converter transforming equirectangular depth image to point cloud.
+
+!!! This code is deprecated and not used in the project. !!!
 */
 
 #include <iostream>

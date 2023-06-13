@@ -21,8 +21,15 @@ class Sensor(ControllableObject):
         The name is the namespace in the yaml file.
         """
         super().__init__(name, parent_frame, yaml_file=yaml_file)
-        self.pub = rospy.Publisher(self.topic, Image, queue_size=1)
         
+        # for debugging
+        # self.obs_time = 0.0
+        # self.pub_time = 0.0
+        # self.hz = 0.0
+        # self.prev_pub = rospy.Time.now()
+        # self.hz_ = 0.0
+        # self.prev_pub_ = rospy.Time.now()
+
         # Used to correct the -z direction of camera projection
         self.correction_rotation = np.asarray([0.0,-1.5707963267,0.0])
         self.correction_matrix = tfs.rotation_matrix(math.pi/2.0, np.asarray([0.0,0.0,1.0]))
@@ -41,6 +48,7 @@ class Sensor(ControllableObject):
         self.position,_  = z_up2y_up(position=self.position)
 
         self.Rate = rospy.Rate(data['sensor_info']['rate'])
+        self.duration = 1.0/data['sensor_info']['rate']
 
         keys = data.keys()
         if 'orientation' in keys:
@@ -98,11 +106,19 @@ class Sensor(ControllableObject):
         
         if self.observation is not None:
             return False
+        
+        #t1 = rospy.Time.now()
+
         self.sensor.draw_observation()
         self.observation =  self.sensor.get_observation()
         self.observation_time = rospy.Time.now() if msg_time is None else msg_time
-        if self.mutex.locked():
-            self.mutex.release()
+
+        # for debugging
+        # self.obs_time = (rospy.Time.now()-t1).to_sec()*0.1 + self.obs_time*0.9
+        # self.hz_ = 1.0/((rospy.Time.now()-self.prev_pub_).to_sec())*0.1 + self.hz_*0.9
+        # self.prev_pub_ = rospy.Time.now()
+
+        self.mutex.release()
         return True
 
     def update(self):
@@ -110,8 +126,19 @@ class Sensor(ControllableObject):
         while not rospy.is_shutdown():
 
             self.mutex.acquire()
+
+            #t1 = rospy.Time.now()
+
             self.publish(None, self.observation_time)
             self.publishTF(self.observation_time)
-            self.Rate.sleep()
+            dt = (self.duration-((rospy.Time.now()-self.observation_time).to_sec()))
+
+            # for debugging
+            # self.pub_time = (rospy.Time.now()-t1).to_sec()*0.1 + self.pub_time*0.9
+            # self.hz = 1.0/((rospy.Time.now()-self.prev_pub).to_sec())*0.1 + self.hz*0.9
+            # self.prev_pub = rospy.Time.now()
+
+            if dt>0.0:
+                rospy.Rate(1.0/dt).sleep()
             self.observation = None
             

@@ -4,8 +4,7 @@ sick_laser:
   type: "2D_Laser"
   name: "sick_laser"
   frame: "/laser"
-  topic: "laser"
-  laserscan_topic: "/sick_scan2"
+  topic: "/sick_scan2"
   publish_transfromation: True
   position: [0.2, 0.0, 0.1]
 

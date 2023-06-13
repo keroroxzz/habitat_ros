@@ -3,6 +3,8 @@ Equirectangular Depth to 2D Laser Scan Converter
 Author: Ariel
 
 This is the source code for the converter transforming equirectangular depth image to 2D laser scan.
+
+!!! This code is deprecated and not used in the project. !!!
 */
 
 

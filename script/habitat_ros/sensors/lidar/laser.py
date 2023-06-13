@@ -7,7 +7,7 @@ import habitat_sim
 import rospy
 
 # ros messages
-from sensor_msgs.msg import Image
+from sensor_msgs.msg import LaserScan
 
 from habitat_ros.utils import *
 from habitat_ros.transformation import *
@@ -20,7 +20,7 @@ class Laser(Sensor):
 
         # Load sensor infromation
         self._init_params(self.data)
-        self.pub = rospy.Publisher(self.topic, Image, queue_size=1)
+        self.pub = rospy.Publisher(self.topic, LaserScan, queue_size=1)
 
     def _init_params(self, data):
 
@@ -40,10 +40,17 @@ class Laser(Sensor):
             self.ang_max = np.deg2rad(self.ang_max)
             self.ang_increment = np.deg2rad(self.ang_increment)
 
-        self.res_h = 2.0*np.pi/self.ang_increment 
+        self.res_h = int(2.0*np.pi/self.ang_increment)
         self.res_v = self.res_h # must be the same for full resolution rendering
         self.h_min = int((self.ang_min + np.pi)/self.ang_increment)
         self.h_max = int((self.ang_max + np.pi)/self.ang_increment)
+
+        self.correction_factor = self.correctionFactor()
+        self.msg = LaserScan(angle_min=self.ang_min,
+                             angle_max=self.ang_max,
+                             angle_increment=self.ang_increment,
+                             range_min=self.near,
+                             range_max=self.far)
 
     def uuid(self):
 
@@ -67,11 +74,15 @@ class Laser(Sensor):
 
         sensor_list.append(spec)
 
+    def correctionFactor(self):
+
+        angle = np.linspace(self.ang_min, self.ang_max, self.h_max-self.h_min+1, endpoint=True, dtype=np.float32)
+        return np.max(abs(np.stack((np.cos(angle), np.sin(angle)), axis=1)), axis=1)
+
     def publish(self, observation, msg_time = None):
         obs_sensor = self.getObservation(observation)
         mid = int(obs_sensor.shape[0]/2)
-        crop = obs_sensor[mid:mid+1, self.h_min:self.h_max+1] # plus one to include the last scan
-
-        crop = self.noise(crop)
-        msg = bridge.cv2_to_imgmsg(crop, encoding="passthrough")
-        self.__publish__(self.pub, msg, msg_time)
+        crop = obs_sensor[mid, self.h_min:self.h_max+1] # plus one to include the last scan point
+        crop = self.noise(crop)[::-1]
+        self.msg.ranges = raw_to_laser_numba(crop, self.correction_factor, self.near, self.far)
+        self.__publish__(self.pub, self.msg, msg_time)

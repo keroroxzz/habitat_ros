@@ -1,9 +1,10 @@
 #! /usr/bin/env python3
 
 import sys
+import cv2
 import numpy as np
 from PyQt5 import QtGui
-from PyQt5.QtCore import QThread, QTimer
+from PyQt5.QtCore import QThread, QTimer, Qt
 from PyQt5.QtGui import QImage, QPixmap
 from PyQt5.QtWidgets import QApplication, QDialog, QGridLayout, QLabel
 
@@ -12,7 +13,7 @@ import rospy
 
 # ros messages
 from std_msgs.msg import Float32
-from sensor_msgs.msg import CompressedImage
+from sensor_msgs.msg import CompressedImage, Image
 from geometry_msgs.msg import Twist
 from habitat_ros.utils import *
 
@@ -37,16 +38,19 @@ class MouseController(QDialog):
         self.timer.start(1000)
 
         self.cmd_pub = CmdPub(rate)
-        rospy.Subscriber("camera", CompressedImage, self.img_cb, queue_size=1)
+
+        topic = rospy.get_param("camera_topic", default="fake_camera")
+        rospy.Subscriber(topic+'/compressed', CompressedImage, self.img_cb, queue_size=1)
+        rospy.Subscriber(topic, Image, self.img_cb, queue_size=1)
 
         self.cmd_pub.start()
 
     def initUI(self):
         self.resize(400, 300)
-        self.label = QLabel()
-
+        
+        self.label = QLabel(self)
         layout = QGridLayout(self)
-        layout.addWidget(self.label, 0, 0, 4, 4)
+        layout.addWidget(self.label, 0, 0, 0, 0, alignment=Qt.AlignCenter)
 
     def exec(self):
         return self.QApp.exec_()
@@ -64,11 +68,14 @@ class MouseController(QDialog):
             self.QApp.closeAllWindows()
 
     def img_cb(self, msg):
-        self.img = bridge.compressed_imgmsg_to_cv2(msg, desired_encoding="bgr8")
+        if isinstance(msg, Image):
+            self.img = bridge.imgmsg_to_cv2(msg, desired_encoding="bgr8")
+        elif isinstance(msg, CompressedImage):
+            self.img = bridge.compressed_imgmsg_to_cv2(msg, desired_encoding="bgr8")
+        self.img = cv2.resize(self.img, (int(self.width()*0.9), int(self.height()*0.9)))
         self.showImage(self.img)
         self.update()
         self.QApp.processEvents()
-        # print(f'Update image at {rospy.Time.now()}')
 
     def mousePressEvent(self, a0: QtGui.QMouseEvent) -> None:
         self.pmouse = a0.pos()
