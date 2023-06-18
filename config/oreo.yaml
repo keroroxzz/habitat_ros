@@ -41,7 +41,7 @@ oreo:
   publish_transfromation: false
 
   odom:
-    topic: "/odom"
+    topic: "/odometry_odm"
     frame: "/odom"
     child_frame: "/base_link"
     

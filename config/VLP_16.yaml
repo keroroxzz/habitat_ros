@@ -18,7 +18,7 @@ velodyne_vlp_16:
 
     mean_error: 0.02
     max_error: 0.03
-    rate: 5
+    rate: 10
 
     resolution:
       vertical: 16
