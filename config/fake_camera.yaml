@@ -6,7 +6,7 @@ fake_camera:
   frame: "fake_camera"
   topic: "/fake_camera"
   topic_frame: "fake_camera_link" # explicitly set the msg's frame
-  position: [-0.7, 0.0, 0.8]
+  position: [-0.7, 0.0, 1.0]
   publish_transfromation: False
   pub_compressed: False #publish compressed image
   

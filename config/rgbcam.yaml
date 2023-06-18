@@ -6,7 +6,7 @@ rgbcamera:
   frame: "/camera_link"
   topic: "/zed2/zed_node/rgb/image_rect_color"
   topic_frame: "/camera" # explicitly set the msg's frame
-  position: [0.1, 0.0, 0.75]
+  position: [0.175, 0.0, 0.83]
   publish_transfromation: True
   pub_compressed: True #publish compressed image
   

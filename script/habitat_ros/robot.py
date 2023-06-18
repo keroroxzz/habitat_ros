@@ -12,6 +12,7 @@ from habitat_sim.utils.common import quat_to_magnum, quat_from_coeffs
 # ros libs
 import rospy
 import rospkg
+import tf2_ros
 
 # ros messages
 from geometry_msgs.msg import Twist
@@ -35,7 +36,13 @@ class Robot(ControllableObject):
         
         self.sim = None
         self.target_vel = Twist()
+        self.last_odom_time = 0.0
         self.last_cmd_time = rospy.Time.now()
+
+        # tf
+        self.tf_buffer = tf2_ros.Buffer(rospy.Duration(5.0))
+        self.tf_listener = tf2_ros.TransformListener(self.tf_buffer)
+
         self.cmd_sub = rospy.Subscriber(self.cmd_topic, Twist, self.cmd_cb, queue_size=10)
         self.odom_pub = rospy.Publisher(self.odom_topic, Odometry, queue_size=10)
 
@@ -70,34 +77,65 @@ class Robot(ControllableObject):
         self.odom_topic = self.extendTopic(odom["topic"])
         self.odom.header.frame_id = self.extendTopic(odom["frame"])
         self.odom.child_frame_id = self.extendTopic(odom["child_frame"])
+        self.odom_ang = np.zeros(3, dtype=float)
+
+        if 'vel_cov' in odom.keys():
+            self.cov = np.array(odom['vel_cov']).reshape(6,6)
+        else:
+            self.cov = np.identity(6, dtype=float) + np.clip(0.1*np.random.randn(6,6)*(1.0-np.identity(6, dtype=float)), -0.1,0.1)
+
+        self.odom.twist.covariance = self.cov.reshape(-1)
 
     def getVelocity(self):
 
-        lin_vel = self.model.linear_velocity
         ang_vel = self.model.angular_velocity
-        lin_vel,_ = y_up2z_up(position=np.asarray([lin_vel[0], lin_vel[1], lin_vel[2]]))
-        ang_vel,_ = y_up2z_up(position=np.asarray([ang_vel[0], ang_vel[1], ang_vel[2]]))
-        return lin_vel, ang_vel
+
+        # ground truth local velocity
+        vel_loc = self.model.rotation.inverted().transform_vector(self.model.linear_velocity)
+
+        # note that habitat is y-up
+        state = np.array((vel_loc.x, -vel_loc.z, 0.0, 0.0, 0.0, ang_vel.y), dtype=float)
+        new_state = np.matmul(state, self.cov)
+
+        return new_state
 
     def updateOdom(self):
 
-        position, q_coeff = self.getPose()
+        dt = self.sim.get_world_time()-self.last_odom_time
 
-        self.odom.pose.pose.position.x = position[0]
-        self.odom.pose.pose.position.y = position[1]
-        self.odom.pose.pose.position.z = position[2]
+        self.odom_ang[0] += self.odom.twist.twist.angular.x*dt
+        self.odom_ang[1] += self.odom.twist.twist.angular.y*dt
+        self.odom_ang[2] += self.odom.twist.twist.angular.z*dt
+        q_coeff = tfs.quaternion_from_euler(self.odom_ang[0], self.odom_ang[1], self.odom_ang[2], "sxyz")
+        
+        dx = dt*(np.cos(self.odom_ang[2])*self.odom.twist.twist.linear.x - np.sin(self.odom_ang[2])*self.odom.twist.twist.linear.y)
+        dy = dt*(np.sin(self.odom_ang[2])*self.odom.twist.twist.linear.x + np.cos(self.odom_ang[2])*self.odom.twist.twist.linear.y)
+
+        self.odom.pose.pose.position.x += dx
+        self.odom.pose.pose.position.y += dy
+        self.odom.pose.pose.position.z = 0.0
         self.odom.pose.pose.orientation.x = q_coeff[0]
         self.odom.pose.pose.orientation.y = q_coeff[1]
         self.odom.pose.pose.orientation.z = q_coeff[2]
         self.odom.pose.pose.orientation.w = q_coeff[3]
 
-        lin_vel, ang_vel = self.getVelocity()
-        self.odom.twist.twist.linear.x = lin_vel[0]
-        self.odom.twist.twist.linear.y = lin_vel[1]
-        self.odom.twist.twist.linear.z = lin_vel[2]
-        self.odom.twist.twist.angular.x = ang_vel[0]
-        self.odom.twist.twist.angular.y = ang_vel[1]
-        self.odom.twist.twist.angular.z = ang_vel[2]
+        v = self.getVelocity()
+        self.odom.twist.twist.linear.x = v[0]
+        self.odom.twist.twist.linear.y = v[1]
+        self.odom.twist.twist.linear.z = 0.0
+        self.odom.twist.twist.angular.x = 0.0
+        self.odom.twist.twist.angular.y = 0.0
+        self.odom.twist.twist.angular.z = v[5]
+
+        self.last_odom_time = self.sim.get_world_time()
+
+        if not self.is_pub_tf:
+            tfBroadcaster.sendTransform(
+                (self.odom.pose.pose.position.x, self.odom.pose.pose.position.y, self.odom.pose.pose.position.z), 
+                q_coeff, 
+                rospy.Time.now(), 
+                self.frame, 
+                self.odom.header.frame_id)
 
     ## Agent config
     def agent_config(self) -> habitat_sim.agent.AgentConfiguration:
@@ -147,6 +185,7 @@ class Robot(ControllableObject):
 
     def bindSimulator(self, sim):
         self.sim = sim
+        self.last_odom_time = self.sim.get_world_time()
 
     def setAgentNode(self, agent_node):
         self.__setNode__(agent_node)
