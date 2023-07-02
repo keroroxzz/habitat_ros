@@ -18,12 +18,12 @@ oreo:
     mode: "dynamic" # dynamic: physical movement, legacy: override velocity
 
     navmesh: true  # moving on the navmesh only
-    navmesh_offset: -0.06 # z-offset
+    navmesh_offset: -0.05 # z-offset
     lock_rotation: true # lock the rotation in x and y, recommend true
 
-    friction_coefficient: 0.02
+    friction_coefficient: 0.05
     angular_damping: 0.3
-    linear_damping: 0.1
+    linear_damping: 0.2
 
   # geometrical properties for navmesh generation and collision, will be overwritten if collidable = True
   geometric:

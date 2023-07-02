@@ -11,7 +11,7 @@ sick_laser:
   sensor_info:
 
     far: 20.0
-    near: 0.10
+    near: 0.03
 
     unit: "deg" # def or rad
     ang_min: -93
