@@ -17,13 +17,13 @@ oreo:
   dynamic:
     mode: "dynamic" # dynamic: physical movement, legacy: override velocity
 
-    navmesh: false  # moving on the navmesh only
-    navmesh_offset: 0.0 # z-offset
-    lock_rotation: false # lock the rotation in x and y, recommend true
+    navmesh: true  # moving on the navmesh only
+    navmesh_offset: -0.06 # z-offset
+    lock_rotation: true # lock the rotation in x and y, recommend true
 
-    friction_coefficient: 0.1
+    friction_coefficient: 0.02
     angular_damping: 0.3
-    linear_damping: 0.3
+    linear_damping: 0.1
 
   # geometrical properties for navmesh generation and collision, will be overwritten if collidable = True
   geometric:
@@ -33,7 +33,7 @@ oreo:
   # import 3D model
   model:
     model_path: "habitat_ros/robot/oreo/oreo" # the first section is the package name where the robot is placed in
-    collidable: true  # recomment false if navmesh = true
+    collidable: false  # recomment false if navmesh = true
 
   cmd_topic: "/cmd_vel"
 

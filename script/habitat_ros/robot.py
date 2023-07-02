@@ -252,8 +252,8 @@ class Robot(ControllableObject):
             vel_loc = self.model.rotation.inverted().transform_vector(self.model.linear_velocity)
             vel = self.model.rotation.transform_vector(mn.Vector3(lin_vel[0]-vel_loc.x, 0.0, -lin_vel[1]-vel_loc.z))*50.0
 
-            ang_loc = self.model.rotation.inverted().transform_vector(self.model.angular_velocity)*1.5
-            torque = self.model.rotation.transform_vector(mn.Vector3(0.0, ang_vel[2]-ang_loc.y, 0.0))*3.0
+            ang_loc = self.model.rotation.inverted().transform_vector(self.model.angular_velocity)
+            torque = self.model.rotation.transform_vector(mn.Vector3(0.0, ang_vel[2]-ang_loc.y, 0.0))*15.0
 
             self.model.apply_force(force=vel, relative_position=mn.Vector3(0.0, 0.0, 0.0))
             self.model.apply_torque(torque=torque)
