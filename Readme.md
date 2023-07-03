@@ -85,7 +85,11 @@ The control panel defines a few keys to control the robot.
 
 We recommend creating a new package to organize the config and model of your custom robot. 
 
-We also provide instructions in the comments. 
+We also provide a lot of instructions in the comments. 
 
-You may refer to the provided [example](https://github.com/keroroxzz/habitat_ros/releases/tag/example).
+1. download [example_myrobot.zip](https://github.com/keroroxzz/habitat_ros/releases/download/release/example_myrobot.zip) and decompress it to your {catkin_ws}/src/
+2. catkin_make your workspace
+3. roslaunch myrobot myrobot.launch
+
+You may also refer to the [releases](https://github.com/keroroxzz/habitat_ros/releases/tag/release).
 
