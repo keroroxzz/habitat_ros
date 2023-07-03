@@ -1,7 +1,12 @@
 # The camera discription file of the robot in habitat
 
 rgbcamera:
-  type: "RGB_Camera"
+
+  # python class to initiate the node instance, there are: "Robot", "DepthCamera", "RGBCamera", "SemanticCamera", "LiDAR", "Laser"
+  # you can also implement a new sensor class in habitat_ros/script/habitat_ros/sensors/...
+  # and import it in habitat_ros/script/habitat_ros/sensors/__init__.py
+  type: "RGBCamera"
+
   name: "rgbcamera"
   frame: "/camera_link"
   topic: "/zed2/zed_node/rgb/image_rect_color"

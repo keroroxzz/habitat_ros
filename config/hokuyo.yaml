@@ -1,7 +1,7 @@
 # The SICK Laser discription file of the robot in habitat
 hokuyo:
 
-  type: "2D_Laser"
+  type: "Laser"
   name: "hokuyo"
   frame: "/laser_hokuyo"
   topic: "/scan3"

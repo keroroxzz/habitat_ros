@@ -1,7 +1,7 @@
 # The camera discription file of the robot in habitat
 
 depthcamera:
-  type: "Depth_Camera"
+  type: "DepthCamera"
   name: "depthcamera"
   frame: "/camera_link"
   topic: "/zed2/zed_node/depth/depth_registered"

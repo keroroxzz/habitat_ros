@@ -1,7 +1,7 @@
 # The camera discription file of the robot in habitat
 
 semantic_camera:
-  type: "Semantic_Camera"
+  type: "SemanticCamera"
   name: "semantic_camera"
   frame: "/camera_link"
   topic: "/semantic"

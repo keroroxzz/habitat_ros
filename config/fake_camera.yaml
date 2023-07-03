@@ -1,7 +1,7 @@
 # The camera discription file of the robot in habitat
 
 fake_camera:
-  type: "RGB_Camera"
+  type: "RGBCamera"
   name: "fake_camera"
   frame: "fake_camera"
   topic: "/fake_camera"

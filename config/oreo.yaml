@@ -3,7 +3,11 @@ robot_name: "oreo"
 
 oreo: # robot_name
 
-  type: "Robot" # type of the node instance, there are: "Robot", "Depth_Camera", "RGB_Camera", "Semantic_Camera", "3D_LiDAR", "2D_Laser"
+  # python class to initiate the node instance, there are: "Robot", "DepthCamera", "RGBCamera", "SemanticCamera", "LiDAR", "Laser"
+  # you can also define your own sensor class in habitat_ros/script/habitat_ros/sensors/...
+  # and import it in habitat_ros/script/habitat_ros/sensors/__init__.py
+  type: "Robot" 
+
   name: "oreo"  # name of the instance, must be unique
   frame: "/base_link" # tf frame of this node
 

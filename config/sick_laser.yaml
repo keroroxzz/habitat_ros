@@ -1,7 +1,7 @@
 # The SICK Laser discription file of the robot in habitat
 sick_laser:
 
-  type: "2D_Laser"
+  type: "Laser"
   name: "sick_laser"
   frame: "/laser"
   topic: "/sick_scan2"

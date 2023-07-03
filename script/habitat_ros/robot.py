@@ -21,11 +21,7 @@ from nav_msgs.msg import Odometry
 from habitat_ros.utils import *
 from habitat_ros.transformation import *
 from habitat_ros.controllable_object import *
-from habitat_ros.sensors.cameras.rgb_camera import *
-from habitat_ros.sensors.cameras.depth_camera import *
-from habitat_ros.sensors.cameras.semantic_camera import * 
-from habitat_ros.sensors.lidar.lidar import *
-from habitat_ros.sensors.lidar.laser import * 
+from habitat_ros.sensors import *   # import all sensors in sensors/__init__.py
 
 class Robot(ControllableObject):
     def __init__(self, name, yaml_file=None):
@@ -236,16 +232,10 @@ class Robot(ControllableObject):
         for s in self.data['sensors'].values():
 
             type=s['type']
-            if type == "RGB_Camera":
-                self.subnodes.append(RGBCamera(s, self.frame))
-            elif type == "3D_LiDAR":
-                self.subnodes.append(LiDAR(s, self.frame))
-            elif type == "2D_Laser":
-                self.subnodes.append(Laser(s, self.frame))
-            elif type == "Depth_Camera":
-                self.subnodes.append(DepthCamera(s, self.frame))
-            elif type == "Semantic_Camera":
-                self.subnodes.append(SemanticCamera(s, self.frame))
+            
+            # dynamic loading of sensor class
+            if type in globals().keys():
+                self.subnodes.append(globals()[type](s, self.frame))
             else:
                 rospy.logdebug(f"Unknown sensor type {type}.")
 

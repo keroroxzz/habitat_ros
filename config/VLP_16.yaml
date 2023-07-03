@@ -1,7 +1,7 @@
 # The Velodyne VPL-16 discription file of the robot in habitat
 velodyne_vlp_16:
 
-  type: "3D_LiDAR"
+  type: "LiDAR"
   name: "velodyne_vlp_16"
   frame: "lidar"
   topic: "/velodyne_points"
