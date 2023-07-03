@@ -2,7 +2,6 @@
   <!-- gmapping -->
   <node pkg="gmapping" type="slam_gmapping" name="gmapping_thing" output="screen" >
     <remap from="scan" to="scan" />
-    <remap from="base_link" to="base_footprint" />
     <remap from="odom" to="odom" />
   </node>
 
