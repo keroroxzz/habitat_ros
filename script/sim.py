@@ -33,8 +33,18 @@ class HabitatSimROS:
         self.ms_sleep = rospy.Rate(1000)
 
         self.sim_rate: float = rate/self.subsetp
-        robot_name = rospy.get_param("/robot_name", default="oreo")
-        robot_spec = rospy.get_param(f"/{robot_name}", default="oreo")
+        robot_name = rospy.get_param("/robot_name", default="")
+
+        if robot_name == "":
+            rospy.logerr(f"Invalid robot name \"{robot_name}\".")
+            exit()
+
+        robot_spec = rospy.get_param(f"/{robot_name}", default="")
+
+        if robot_spec == "":
+            rospy.logerr(f"No robot spec is provided for {robot_name}!")
+            exit()
+
         self.robot = Robot(robot_spec)
         self.robot.loadSensors()
         
@@ -56,6 +66,9 @@ class HabitatSimROS:
 
         # must put at the last line in init to prevent counting init time
         self.last_update = rospy.Time.now()
+
+        rospy.logdebug(f"Robot {robot_name} is successfully loaded, clear the param now.")
+        rospy.delete_param(f"/{robot_name}")
 
 
     ## Simulation configuratrion and setting functions ##
@@ -118,3 +131,5 @@ if __name__ == "__main__":
     simulator = HabitatSimROS(1.0)
     while not rospy.is_shutdown():
         simulator.draw()
+    simulator.sim.close()
+    exit()
