@@ -52,7 +52,11 @@ class Robot(ControllableObject):
         pkg_path = rospkg.RosPack().get_path(path[0])
         model_path = data["model"]["model_path"][len(path[0])+1:]
         self.model_path =  os.path.join(pkg_path, model_path)
-        rospy.logdebug("Load robot model from: " + self.model_path)
+
+        if os.path.exists(self.model_path):
+            rospy.logdebug("Load robot model from: " + self.model_path)
+        else:
+            rospy.logerr("Path to robot model not found: " + self.model_path)
 
         self.collidable =  data["model"]["collidable"] if 'collidable' in data['model'].keys() else True
         
@@ -70,7 +74,11 @@ class Robot(ControllableObject):
         self.height = data["geometric"]["height"]
         self.radius = data["geometric"]["radius"]
 
-        self.cmd_topic = self.extendTopic(data["cmd_topic"])
+        self.cmd_topic = self.extendTopic(data["control"]["cmd_topic"])
+        self.max_torque = data["control"]["max_torque"]
+        self.max_linear_force = data["control"]["max_linear_force"]
+        self.torque_p = data["control"]["torque_p"]
+        self.linear_force_p = data["control"]["linear_force_p"]
 
         odom = data["odom"]
         self.odom = Odometry()
@@ -194,11 +202,20 @@ class Robot(ControllableObject):
 
     ## Load model asset
     def loadModel(self, sim):
+
+
         rigid_obj_mgr = sim.get_rigid_object_manager()
         obj_templates_mgr = sim.get_object_template_manager()
 
         # load the robot asset
-        template_id = obj_templates_mgr.load_configs(self.model_path)[0]
+        template_id = obj_templates_mgr.load_configs(self.model_path)
+        
+        if len(template_id) == 0:
+            rospy.logerr(f"Failed to load model from {self.model_path}.")
+            exit()
+
+        template_id = template_id[0]
+
         self.model = rigid_obj_mgr.add_object_by_template_id(template_id, self.node)
         self.model.translation = self.model_translation
         self.model.rotation = quat_to_magnum(quat_from_coeffs(self.model_rotation))
@@ -250,11 +267,19 @@ class Robot(ControllableObject):
         elif self.mode=='dynamic':
             
             vel_loc = self.model.rotation.inverted().transform_vector(self.model.linear_velocity)
-            vel = self.model.rotation.transform_vector(mn.Vector3(lin_vel[0]-vel_loc.x, 0.0, -lin_vel[1]-vel_loc.z))*50.0
+            vel = self.model.rotation.transform_vector(mn.Vector3(lin_vel[0]-vel_loc.x, 0.0, -lin_vel[1]-vel_loc.z))*self.linear_force_p
+
+            vel_len = vel.length()
+            if vel_len>0.0 and vel_len>self.max_linear_force:
+                vel = self.max_linear_force*vel/vel_len
 
             ang_loc = self.model.rotation.inverted().transform_vector(self.model.angular_velocity)
-            torque = self.model.rotation.transform_vector(mn.Vector3(0.0, ang_vel[2]-ang_loc.y, 0.0))*15.0
+            torque = self.model.rotation.transform_vector(mn.Vector3(0.0, ang_vel[2]-ang_loc.y, 0.0))*self.torque_p
 
+            torque_len = torque.length()
+            if torque_len>0.0 and torque_len>self.max_torque:
+                torque = self.max_torque*torque/torque_len
+            
             self.model.apply_force(force=vel, relative_position=mn.Vector3(0.0, 0.0, 0.0))
             self.model.apply_torque(torque=torque)
 

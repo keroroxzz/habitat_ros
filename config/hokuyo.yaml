@@ -12,7 +12,7 @@ hokuyo:
   sensor_info:
 
     far: 5.6
-    near: 0.02
+    near: 0.06
 
     unit: "deg" # def or rad
     ang_min: -100

@@ -1,51 +1,55 @@
-# specify the namespace of the robot
+# specify the namespace of the robot to be loaded, must be the same as the following robot_name 
 robot_name: "oreo"
 
-oreo:
-  type: "Robot"
-  name: "oreo"
-  frame: "/base_link"
+oreo: # robot_name
 
-  # uncomment this line to get ground-truth semantic label
-  # sensors: ["velodyne_vlp_16", "rgbcamera", "sick_laser", "hokuyo", "depthcamera", "semantic_camera", "fake_camera"]
+  type: "Robot" # type of the node instance, there are: "Robot", "Depth_Camera", "RGB_Camera", "Semantic_Camera", "3D_LiDAR", "2D_Laser"
+  name: "oreo"  # name of the instance, must be unique
+  frame: "/base_link" # tf frame of this node
 
-  # initial pose
+  # initial pose in the world frame
   translation: [0.0, 0.0, 0.5]
   rotation: [0.0, 0.0, 0.0, 1.0]
 
   # dynamic properties
   dynamic:
-    mode: "dynamic" # dynamic: physical movement, legacy: override velocity
+    mode: "dynamic" # "dynamic": physical movement, "legacy": velocity control
 
     navmesh: true  # moving on the navmesh only
     navmesh_offset: -0.05 # z-offset
-    lock_rotation: true # lock the rotation in x and y, recommend true
+    lock_rotation: true # lock the rotation in x and y axis to prevent falling, recommend true
 
     friction_coefficient: 0.05
-    angular_damping: 0.3
-    linear_damping: 0.2
+    angular_damping: 0.2
+    linear_damping: 0.2 # this could prevent the simulation from exploding
 
-  # geometrical properties for navmesh generation and collision, will be overwritten if collidable = True
+  # robot dimension properties for navmesh generation and collision, will be overwritten if collidable = True
   geometric:
     height: 1.0
     radius: 0.24
 
   # import 3D model
   model:
-    model_path: "habitat_ros/robot/oreo/oreo" # the first section is the package name where the robot is placed in
+    model_path: "habitat_ros/robot/oreo/oreo" # folder path of where your robot modle is, e.g. {pkg_name}/robot/{robot_name}
     collidable: false  # recomment false if navmesh = true
 
-  cmd_topic: "/cmd_vel"
+  control:
+    cmd_topic: "/cmd_vel" # topic to receive velocity command
+    max_torque: 2.0 # max torque to apply on the robot [newton*meter]
+    max_linear_force: 100.0 # max force to apply on the robot [newton]
+    torque_p: 50.0  # proportional gain for torque control
+    linear_force_p: 35.0 # proportional gain for linear force control
 
   # switch to true to publish ground-truth tf between map and base_link
   publish_transfromation: false
 
+  # odometry configuration
   odom:
     topic: "/odometry_odm"
     frame: "/odom"
     child_frame: "/base_link"
 
-    # randomly setted, could be modified if needed
+    # the covariance matrix, currently randomly setted, could be modified if needed
     vel_cov: [
       [1.0,0.03,0.0,0.0,0.0,-0.02],
       [0.03,1.0,0.0,0.0,0.0,0.06],
@@ -54,8 +58,11 @@ oreo:
       [0.0,0.0,0.0,0.0,1.0,0.0],
       [-0.02,0.06,0.0,0.0,0.0,1.0],]
     
+  # extra tf links to be published, note that their parent is this node's frame 
   tf_links:
     base_footprint:
       frame: "/base_footprint"
+
+      # pose of the frame
       position: [0.0, 0.0, 0.0]
       orientation: [0.0, 0.0, 0.0, 1.0]
