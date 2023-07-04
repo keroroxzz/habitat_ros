@@ -39,10 +39,10 @@ oreo: # robot_name
 
   control:
     cmd_topic: "/cmd_vel" # topic to receive velocity command
-    max_torque: 2.0 # max torque to apply on the robot [newton*meter]
-    max_linear_force: 100.0 # max force to apply on the robot [newton]
-    torque_p: 50.0  # proportional gain for torque control
-    linear_force_p: 35.0 # proportional gain for linear force control
+    angular_pid: {"Kp":1.0, "Ki":0.1, "Kd":0.05}  # proportional gain for torque control
+    linear_x_pid: {"Kp":40.0, "Ki":10.0, "Kd":0.5} # proportional gain for linear force control
+    linear_y_pid: {"Kp":40.0, "Ki":10.0, "Kd":0.5} # proportional gain for linear force control
+    maximun_velocity: {"x":50.0, "y":50.0, "a":1.0} # max force and torque to apply on the robot [newton, newton, newton*meter]
 
   # switch to true to publish ground-truth tf between map and base_link
   publish_transfromation: false

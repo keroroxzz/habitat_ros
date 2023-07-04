@@ -2,6 +2,7 @@ import os
 import time
 import threading
 import numpy as np
+from simple_pid import PID
 from typing import Dict, List
 
 # habitat
@@ -34,6 +35,10 @@ class Robot(ControllableObject):
         self.target_vel = Twist()
         self.last_odom_time = 0.0
         self.last_cmd_time = rospy.Time.now()
+
+        self.pid_x = PID(setpoint=0, output_limits=(-self.maximun_velocity['x'], self.maximun_velocity['x']), **self.linear_x_pid)
+        self.pid_y = PID(setpoint=0, output_limits=(-self.maximun_velocity['y'], self.maximun_velocity['y']), **self.linear_y_pid)
+        self.pid_z = PID(setpoint=0, output_limits=(-self.maximun_velocity['a'], self.maximun_velocity['a']), **self.angular_pid)
 
         # tf
         self.tf_buffer = tf2_ros.Buffer(rospy.Duration(5.0))
@@ -71,10 +76,10 @@ class Robot(ControllableObject):
         self.radius = data["geometric"]["radius"]
 
         self.cmd_topic = self.extendTopic(data["control"]["cmd_topic"])
-        self.max_torque = data["control"]["max_torque"]
-        self.max_linear_force = data["control"]["max_linear_force"]
-        self.torque_p = data["control"]["torque_p"]
-        self.linear_force_p = data["control"]["linear_force_p"]
+        self.angular_pid = data["control"]["angular_pid"]
+        self.linear_x_pid = data["control"]["linear_x_pid"]
+        self.linear_y_pid = data["control"]["linear_y_pid"]
+        self.maximun_velocity = data["control"]["maximun_velocity"]
 
         odom = data["odom"]
         self.odom = Odometry()
@@ -256,19 +261,24 @@ class Robot(ControllableObject):
 
         elif self.mode=='dynamic':
             
-            vel_loc = self.model.rotation.inverted().transform_vector(self.model.linear_velocity)
-            vel = self.model.rotation.transform_vector(mn.Vector3(lin_vel[0]-vel_loc.x, 0.0, -lin_vel[1]-vel_loc.z))*self.linear_force_p
+            # set the target
+            self.pid_x.setpoint = lin_vel[0]
+            self.pid_y.setpoint = -lin_vel[1]
+            self.pid_z.setpoint = ang_vel[2]
 
-            vel_len = vel.length()
-            if vel_len>0.0 and vel_len>self.max_linear_force:
-                vel = self.max_linear_force*vel/vel_len
+            vel_loc = self.model.rotation.inverted().transform_vector(self.model.linear_velocity)
+            vel = self.model.rotation.transform_vector(
+                mn.Vector3(
+                self.pid_x(vel_loc.x), 
+                0.0, 
+                self.pid_y(vel_loc.z)))
 
             ang_loc = self.model.rotation.inverted().transform_vector(self.model.angular_velocity)
-            torque = self.model.rotation.transform_vector(mn.Vector3(0.0, ang_vel[2]-ang_loc.y, 0.0))*self.torque_p
-
-            torque_len = torque.length()
-            if torque_len>0.0 and torque_len>self.max_torque:
-                torque = self.max_torque*torque/torque_len
+            torque = self.model.rotation.transform_vector(
+                mn.Vector3(
+                0.0, 
+                self.pid_z(ang_loc.y), 
+                0.0))
             
             self.model.apply_force(force=vel, relative_position=mn.Vector3(0.0, 0.0, 0.0))
             self.model.apply_torque(torque=torque)

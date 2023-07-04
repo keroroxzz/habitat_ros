@@ -32,9 +32,13 @@ class ControllableObject(ABC):
         pass
 
     def extendTopic(self, topic: str):
-        extended = topic if topic[0]=='/' else f'/{self.uuid}/{topic}'
-        print(f'{topic} ==> {extended}')
-        return extended[1:]
+
+        if not topic[0]=='/':
+            extended = f'/{self.uuid}/{topic}'
+            rospy.logdebug(f'{self.uuid}: Extend topic \"{topic}\" as \"{extended}\".')
+            return extended[1:]
+
+        return topic[1:]
 
     ## Param loading
     def __loadParam__(self, data, parent_frame, filename=None):
@@ -78,7 +82,7 @@ class ControllableObject(ABC):
 
                 topic = self.extendTopic(topic)
                 rospy.Subscriber(topic, Float32, temp_callback, queue_size=10)
-                rospy.logdebug(f'{self.uuid}: Subscribe {topic} for {action} action.')
+                rospy.logdebug(f'{self.uuid}: Subscribe \"{topic}\" for \"{action}\" action.')
 
         # Loading the specs of child class
         self.__loadSpec__(data)

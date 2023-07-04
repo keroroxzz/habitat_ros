@@ -6,6 +6,11 @@
   <arg name="scene" default="00009"/>
   <arg name="control_panel" default="true"/>
   <arg name="dataset" default="$(env HABITAT_DATASET_PATH)"/>
+  <arg name="magnum_log" default="quiet"/>
+  <arg name="habitat_sim_log" default="quiet"/>
+  
+  <env name="MAGNUM_LOG" value="$(arg magnum_log)"/>
+  <env name="HABITAT_SIM_LOG" value="$(arg habitat_sim_log)"/>
   <param name="habitat_scene" type="str" value="$(arg scene)" />
   <param name="habitat_dataset" type="str" value="$(arg dataset)" />
 

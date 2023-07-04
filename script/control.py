@@ -10,12 +10,15 @@ from PyQt5.QtWidgets import QApplication, QDialog, QGridLayout, QLabel
 
 # ros libs
 import rospy
+from cv_bridge import CvBridge
 
 # ros messages
 from std_msgs.msg import Float32
 from sensor_msgs.msg import CompressedImage, Image
 from geometry_msgs.msg import Twist
-from habitat_ros.utils import *
+# from habitat_ros.utils import *
+
+bridge = CvBridge()
 
 class MouseController(QDialog):
     def __init__(self, rate, app, point) -> None:

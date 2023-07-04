@@ -30,6 +30,7 @@ Note: You may refer to [habitat-sim](https://github.com/facebookresearch/habitat
 
         conda install -c anaconda pyqt
         conda install -c conda-forge pyyaml rospkg defusedxml opencv numba
+        conda install -c esrf-bcu simple-pid
 
 4. Install Habitat-ROS package:
 
