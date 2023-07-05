@@ -91,7 +91,7 @@ class LiDAR(Sensor):
 
     def correctionFactor(self):
 
-        return lidar_correction(self.hfov, self.vfov, self.hres, self.vres_raw)
+        return lidar_correction(np.float32(np.mgrid[0:self.vres_raw, 0:self.hres]), self.hfov, self.vfov, self.hres, self.vres_raw)
 
     def publish(self, observation, msg_time = None):
         obs_sensor = self.getObservation(observation)

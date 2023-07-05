@@ -34,7 +34,7 @@ oreo: # robot_name
 
   # import 3D model
   model:
-    model_path: "habitat_ros/robot/oreo/oreo" # folder path of where your robot modle is, e.g. {pkg_name}/robot/{robot_name}
+    model_path: "habitat_ros/robot/oreo/oreo.object_config.json" # folder path of where your robot modle is, e.g. {pkg_name}/robot/{robot_name}
     collidable: false  # recomment false if navmesh = true
 
   control:
