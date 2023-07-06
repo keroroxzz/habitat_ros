@@ -36,9 +36,9 @@ class Robot(ControllableObject):
         self.last_odom_time = 0.0
         self.last_cmd_time = rospy.Time.now()
 
-        self.pid_x = PID(setpoint=0, output_limits=(-self.maximun_velocity['x'], self.maximun_velocity['x']), **self.linear_x_pid)
-        self.pid_y = PID(setpoint=0, output_limits=(-self.maximun_velocity['y'], self.maximun_velocity['y']), **self.linear_y_pid)
-        self.pid_z = PID(setpoint=0, output_limits=(-self.maximun_velocity['a'], self.maximun_velocity['a']), **self.angular_pid)
+        self.pid_x = PID(setpoint=0, output_limits=(-self.maximun_force['x'], self.maximun_force['x']), **self.linear_x_pid)
+        self.pid_y = PID(setpoint=0, output_limits=(-self.maximun_force['y'], self.maximun_force['y']), **self.linear_y_pid)
+        self.pid_z = PID(setpoint=0, output_limits=(-self.maximun_force['a'], self.maximun_force['a']), **self.angular_pid)
 
         # tf
         self.tf_buffer = tf2_ros.Buffer(rospy.Duration(5.0))
@@ -79,7 +79,7 @@ class Robot(ControllableObject):
         self.angular_pid = data["control"]["angular_pid"]
         self.linear_x_pid = data["control"]["linear_x_pid"]
         self.linear_y_pid = data["control"]["linear_y_pid"]
-        self.maximun_velocity = data["control"]["maximun_velocity"]
+        self.maximun_force = data["control"]["maximun_force"]
 
         odom = data["odom"]
         self.odom = Odometry()
