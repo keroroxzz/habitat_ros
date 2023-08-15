@@ -45,7 +45,10 @@ oreo: # robot_name
     maximun_force: {"x":50.0, "y":50.0, "a":1.0} # max force and torque to apply on the robot [newton, newton, newton*meter]
 
   # switch to true to publish ground-truth tf between map and base_link
-  publish_transfromation: false
+  publish_transfromation: true
+  transform:
+    frame: "/map_gt" # name of the parent frame of the map, default is the frame_id of the parent node ("/map" for a Robot)
+    inverse: true  # if true, the tf will be published from base_link to map, this could be used for evaluation
 
   # odometry configuration
   odom:

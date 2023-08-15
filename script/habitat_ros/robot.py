@@ -49,6 +49,7 @@ class Robot(ControllableObject):
 
     def __loadSpec__(self, data):
 
+        # model
         path = data["model"]["model_path"].split('/')
         pkg_path = rospkg.RosPack().get_path(path[0])
         model_path = data["model"]["model_path"][len(path[0])+1:]
@@ -61,9 +62,11 @@ class Robot(ControllableObject):
 
         self.collidable =  data["model"]["collidable"] if 'collidable' in data['model'].keys() else True
         
+        # model pose
         self.model_translation = np.asarray(data["translation"])[(1,2,0),]
         self.model_rotation = data["rotation"]
 
+        # dynamic
         self.mode = data["dynamic"]["mode"]
         self.navmesh = data["dynamic"]["navmesh"]
         self.navmesh_offset = mn.Vector3(0.0,data["dynamic"]["navmesh_offset"],0.0)
@@ -72,15 +75,18 @@ class Robot(ControllableObject):
         self.angular_damping = data["dynamic"]["angular_damping"]
         self.linear_damping = data["dynamic"]["linear_damping"]
 
+        # geometric
         self.height = data["geometric"]["height"]
         self.radius = data["geometric"]["radius"]
 
+        # control
         self.cmd_topic = self.extendTopic(data["control"]["cmd_topic"])
         self.angular_pid = data["control"]["angular_pid"]
         self.linear_x_pid = data["control"]["linear_x_pid"]
         self.linear_y_pid = data["control"]["linear_y_pid"]
         self.maximun_force = data["control"]["maximun_force"]
 
+        # odom
         odom = data["odom"]
         self.odom = Odometry()
         self.odom_topic = self.extendTopic(odom["topic"])
@@ -94,6 +100,8 @@ class Robot(ControllableObject):
             self.cov = np.identity(6, dtype=float) + np.clip(0.1*np.random.randn(6,6)*(1.0-np.identity(6, dtype=float)), -0.1,0.1)
 
         self.odom.twist.covariance = self.cov.reshape(-1)
+
+        # transform
 
     def getVelocity(self):
 
