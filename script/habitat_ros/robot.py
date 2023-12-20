@@ -61,7 +61,7 @@ class Robot(ControllableObject):
 
         self.collidable =  data["model"]["collidable"] if 'collidable' in data['model'].keys() else True
         
-        self.model_translation = np.asarray(data["translation"])[(1,2,0),]
+        self.model_translation = np.asarray(data["position"])[(1,2,0),]
         self.model_rotation = data["rotation"]
 
         self.mode = data["dynamic"]["mode"]

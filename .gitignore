@@ -4,3 +4,4 @@
 *.pickle
 .vscode
 __pycache__
+build/

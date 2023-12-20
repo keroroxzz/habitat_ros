@@ -1,6 +1,0 @@
-*.pth
-*.pt
-*.pyc
-*.pickle
-.vscode
-__pycache__
