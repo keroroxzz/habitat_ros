@@ -78,10 +78,9 @@ def raw_to_lidar_numba(raw: np.ndarray = np.array([[]]), vec: np.ndarray = np.ar
 
     return p, id
 
-@nb.jit()
-def lidar_correction(hfov, vfov, hres, vres):
+# @nb.jit()
+def lidar_correction(x, hfov, vfov, hres, vres):
 
-    x = np.float32(np.mgrid[0:vres, 0:hres])
     x[1] = -(x[1]/hres - 0.5)*hfov
     x[0] = -(x[0]/vres - 0.5)*vfov
     x *= np.pi/180.0
@@ -90,11 +89,7 @@ def lidar_correction(hfov, vfov, hres, vres):
     ry = np.sin(x[1])*np.cos(x[0])
     rz = np.sin(x[0])
 
-    ax = np.abs(rx)
-    ay = np.abs(ry)
-    az = np.abs(rz)
-
-    dot = np.max(np.stack((ax, ay, az), axis=2), axis=2)
+    dot = np.max(np.abs(np.stack((rx, ry, rz), axis=2)), axis=2)
     vector = np.stack((rx, ry, rz), axis=2)/dot.reshape(dot.shape[0],dot.shape[1],1)
 
     return dot, vector

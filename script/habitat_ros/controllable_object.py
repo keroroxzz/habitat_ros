@@ -52,12 +52,21 @@ class ControllableObject(ABC):
         self.type = data["type"]
 
         self.frame = self.extendTopic(data["frame"])
-        self.parent_frame = parent_frame
+
 
         keys = data.keys()
         self.is_pub_tf = True
         if 'publish_transfromation' in keys:
             self.is_pub_tf = data["publish_transfromation"]
+            
+        self.parent_frame = parent_frame
+        self.inverse_parent_frame = False
+        if 'transform' in keys:
+            if 'frame' in data['transform'].keys():
+                self.parent_frame = data['transform']['frame']
+
+            if 'inverse' in data['transform'].keys():
+                self.inverse_parent_frame = data['transform']['inverse']
 
         # Dynamically add tf link
         if 'tf_links' in keys:
@@ -101,9 +110,14 @@ class ControllableObject(ABC):
             # left/right on agent scene node
             control(self.node, action, act_spec(amount))
 
-    def getPose(self):
-        position = nodeTranslationToNumpy(self.node.translation)
-        rotation = quat_from_magnum(self.node.rotation)
+    def getPose(self, inverse=False):
+        if inverse:
+            inv_rot = self.node.rotation.inverted()
+            position = nodeTranslationToNumpy(-inv_rot.transform_vector(self.node.translation))
+            rotation = quat_from_magnum(inv_rot)
+        else:
+            position = nodeTranslationToNumpy(self.node.translation)
+            rotation = quat_from_magnum(self.node.rotation)
         position, rotation = y_up2z_up(position, rotation)
         q_coeff = quat_to_coeffs(rotation)
         q_coeff = self.__tfCorrection__(q_coeff)
@@ -124,6 +138,9 @@ class ControllableObject(ABC):
             msg_time=rospy.Time.now()
 
         # translate the position and orientation to desired format
-        position, q_coeff = self.getPose()
-        tfBroadcaster.sendTransform(position, q_coeff, msg_time, self.frame, self.parent_frame)
+        position, q_coeff = self.getPose(inverse=self.inverse_parent_frame)
+        if self.inverse_parent_frame:
+            tfBroadcaster.sendTransform(position, q_coeff, msg_time, self.parent_frame, self.frame)
+        else:
+            tfBroadcaster.sendTransform(position, q_coeff, msg_time, self.frame, self.parent_frame)
 

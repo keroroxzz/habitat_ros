@@ -24,8 +24,8 @@ oreo: # robot_name
     lock_rotation: true # lock the rotation in x and y axis to prevent falling, recommend true
 
     friction_coefficient: 0.05
-    angular_damping: 0.2
-    linear_damping: 0.2 # this could prevent the simulation from exploding
+    angular_damping: 0.3
+    linear_damping: 0.3 # this could prevent the simulation from exploding
 
   # robot dimension properties for navmesh generation and collision, will be overwritten if collidable = True
   geometric:
@@ -42,10 +42,13 @@ oreo: # robot_name
     angular_pid: {"Kp":1.0, "Ki":0.1, "Kd":0.05}  # proportional gain for torque control
     linear_x_pid: {"Kp":40.0, "Ki":10.0, "Kd":0.5} # proportional gain for linear force control
     linear_y_pid: {"Kp":40.0, "Ki":10.0, "Kd":0.5} # proportional gain for linear force control
-    maximun_velocity: {"x":50.0, "y":50.0, "a":1.0} # max force and torque to apply on the robot [newton, newton, newton*meter]
+    maximun_force: {"x":50.0, "y":50.0, "a":1.0} # max force and torque to apply on the robot [newton, newton, newton*meter]
 
   # switch to true to publish ground-truth tf between map and base_link
-  publish_transfromation: false
+  publish_transfromation: true
+  transform:
+    frame: "/map_gt" # name of the parent frame of the map, default is the frame_id of the parent node ("/map" for a Robot)
+    inverse: true  # if true, the tf will be published from base_link to map, this could be used for evaluation
 
   # odometry configuration
   odom:
