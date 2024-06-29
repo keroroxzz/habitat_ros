@@ -94,3 +94,26 @@ We also provide a lot of instructions in the comments.
 
 You may also refer to the [releases](https://github.com/keroroxzz/habitat_ros/releases/tag/release).
 
+# Reference
+
+```bibtex
+@misc{habitat_ros,
+      title={Habitat ROS: An Habitat Package for ROS 1}, 
+      author={Chih-Hung Tu},
+      year={2023},
+      url={https://github.com/keroroxzz/habitat_ros}, 
+      journal={GitHub}
+}
+```
+
+# License
+
+The original default robot "OREO" belongs to Advanced Control Lab (ACL), National Taiwan University.
+Please create your robot and prevent using OREO in your publishment, thanks!
+Contact the lab for more information about OREO: https://www.ntueeacl.com/
+
+If you have any problem with this package, please open a new issue on Github or find me through my email.
+
+The code is distributed under the CC BY-NC-SA 4.0 License.
+
+
