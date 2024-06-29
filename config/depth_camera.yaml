@@ -6,7 +6,7 @@ depthcamera:
   frame: "/camera_link"
   topic: "/zed2/zed_node/depth/depth_registered"
   topic_frame: "/camera" # explicitly set the msg's frame
-  position: [0.175, 0.0, 0.83]
+  position: [0.1, 0.0, 0.2]
   publish_transfromation: False
 
   # actuation topics and corresponding actions

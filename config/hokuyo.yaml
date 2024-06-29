@@ -6,7 +6,7 @@ hokuyo:
   frame: "/laser_hokuyo"
   topic: "/scan3"
   publish_transfromation: True
-  position: [-0.25, 0.0, 0.3]
+  position: [-0.15, 0.0, 0.1]
   orientation: [0.0, 3.14159, 0.0]
 
   sensor_info:

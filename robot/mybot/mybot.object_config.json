@@ -1,0 +1,10 @@
+{
+    "render_asset": "model.glb",
+    "collision_asset": "collision.glb",
+    "join_collision_meshes": false,
+    "mass": 5.0,
+    "inertia": [0.6, 0.2, 0.5],
+    "friction_coefficient": 0.2,
+    "restitution_coefficient": 0.0,
+    "COM": [0, 0.0, 0]
+}

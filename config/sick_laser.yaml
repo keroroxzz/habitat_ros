@@ -6,7 +6,7 @@ sick_laser:
   frame: "/laser"
   topic: "/sick_scan2"
   publish_transfromation: True
-  position: [0.1, 0.0, 0.36]
+  position: [0.15, 0.0, 0.1]
 
   sensor_info:
 

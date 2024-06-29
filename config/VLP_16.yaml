@@ -6,7 +6,7 @@ velodyne_vlp_16:
   frame: "lidar"
   topic: "/velodyne_points"
   publish_transfromation: True
-  position: [-0.175, 0.0, 1.2]
+  position: [0.0, 0.0, 0.3]
 
   sensor_info:
 

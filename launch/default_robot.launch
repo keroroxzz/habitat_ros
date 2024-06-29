@@ -1,0 +1,42 @@
+<launch>
+  <!-- an example launch file for the habitat_ros pkg, the default robot is oreo -->
+  <!-- we recommend you to create your own robot pkg to organize robot configs, models, and launch files -->
+
+  <!-- scene configs -->
+  <arg name="scene" default="00009"/>
+  <arg name="control_panel" default="true"/>
+  <arg name="dataset" default="$(env HABITAT_DATASET_PATH)"/>
+  <param name="habitat_scene" type="str" value="$(arg scene)" />
+  <param name="habitat_dataset" type="str" value="$(arg dataset)"/>
+
+  <!-- robot configs -->
+  <!-- add config files of sensors and the robot here... -->
+  <!-- note that the $(find habitat_ros) should be replaced by your own robot pkg name -->
+  <!-- set the namespace of the sensors as "{robot namespace}/sensors/" to attach them-->
+  <rosparam command="load" file="$(find habitat_ros)/config/mybot.yaml"/>
+  <rosparam command="load" file="$(find habitat_ros)/config/VLP_16.yaml" ns="mybot/sensors/"/>
+  <rosparam command="load" file="$(find habitat_ros)/config/hokuyo.yaml" ns="mybot/sensors/"/>
+  <rosparam command="load" file="$(find habitat_ros)/config/rgbcam.yaml" ns="mybot/sensors/"/>
+  <rosparam command="load" file="$(find habitat_ros)/config/sick_laser.yaml" ns="mybot/sensors/"/>
+  <rosparam command="load" file="$(find habitat_ros)/config/fake_camera.yaml" ns="mybot/sensors/"/>
+
+  <!-- uncomment the following lines to try the depth camera and semantic camera -->
+  <rosparam command="load" file="$(find habitat_ros)/config/semantic_camera.yaml"  ns="mybot/sensors/"/>
+  <rosparam command="load" file="$(find habitat_ros)/config/depth_camera.yaml" ns="mybot/sensors/"/>
+
+  <!-- you can load other pkgs here if you need -->
+  <!-- depth image to point clouds -->
+  <node pkg="nodelet" type="nodelet" args="manager"
+          name="nodelet_manager" output="screen"/>
+
+  <node pkg="nodelet" type="nodelet" name="cloudify"
+          args="load depth_image_proc/point_cloud_xyzrgb nodelet_manager">
+      <remap from="depth_registered/image_rect" to="/depth"/>
+      <remap from="depth_registered/points" to="camera/depth_registered/points"/>
+      <remap from="rgb/image_rect_color" to="/camera"/>
+      <remap from="rgb/camera_info" to="/camera_info"/>
+  </node>
+
+  <!-- launch the simulator, "must" be loaded after loading all the robot params -->
+  <include file="$(find habitat_ros)/launch/habitat_sim.launch" pass_all_args="true"/>
+</launch>

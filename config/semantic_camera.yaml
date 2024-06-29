@@ -6,7 +6,7 @@ semantic_camera:
   frame: "/camera_link"
   topic: "/semantic"
   publish_transfromation: False
-  position: [0.1, 0.0, 0.75]
+  position: [0.1, 0.0, 0.2]
 
   # actuation topics and corresponding actions
   actuation:
