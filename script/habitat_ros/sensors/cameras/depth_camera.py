@@ -7,6 +7,9 @@ class DepthCamera(Camera):
     def __init__(self, name, parent_frame, yaml_file=None):
         super().__init__(name, parent_frame, yaml_file)
 
+    def getSensorType(self):
+        return habitat_sim.SensorType.DEPTH
+
     def publish(self, observation, msg_time = None):
 
         obs_sensor = self.getObservation(observation)

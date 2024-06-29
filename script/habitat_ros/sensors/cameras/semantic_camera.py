@@ -13,6 +13,9 @@ class SemanticCamera(Camera):
     def __init__(self, name, parent_frame, yaml_file=None):
         super().__init__(name, parent_frame, yaml_file)
 
+    def getSensorType(self):
+        return habitat_sim.SensorType.SEMANTIC
+    
     def toNumpy(self, semantic_obs):
         """
         Translate the semantic label into RGB image for publishing

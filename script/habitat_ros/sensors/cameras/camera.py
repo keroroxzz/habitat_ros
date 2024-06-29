@@ -73,14 +73,7 @@ class Camera(Sensor):
     def getSensorSpec(self, sensor_list):
 
         spec = habitat_sim.CameraSensorSpec()
-
-        if self.type == "RGB_Camera":
-            spec.sensor_type = habitat_sim.SensorType.COLOR
-        elif self.type == "Depth_Camera":
-            spec.sensor_type = habitat_sim.SensorType.DEPTH
-        elif self.type == "Semantic_Camera":
-            spec.sensor_type = habitat_sim.SensorType.SEMANTIC
-
+        spec.sensor_type = self.getSensorType()
         spec.uuid = self.uuid
         spec.resolution = [self.height, self.width]
         spec.far = self.far
@@ -96,6 +89,10 @@ class Camera(Sensor):
         if self.camera_info is not None:
             self.camera_info.header.stamp = rospy.Time.now() if msg_time is None else msg_time
             self.cam_info_pub.publish(self.camera_info)
+
+    @abstractmethod
+    def getSensorType(self):
+        pass
 
     @abstractmethod
     def publish(self, observation, msg_time = None):
