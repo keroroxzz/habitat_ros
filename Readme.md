@@ -86,11 +86,31 @@ The control panel defines a few keys to control the robot.
 
 We recommend creating a new package to organize the config and model of your custom robot. 
 
+The package should contains the following files, and properly configured these files accroding to your package name, sensor settup, and so on.
+
+    catkin_ws/src/{your project name}
+        CMakeLists.txt
+        package.xml
+        config/
+            robot.yaml  <= Should specify the "object_config.json" file within your package
+            sensor1.yaml
+            sensor2.yaml
+            ...
+        launch/
+            launch_my_robot.launch  <= should launch the yaml files within your package
+        robot/
+            my_robot/
+                collision.glb
+                model.glb
+                mybot.object_config.json
+
 We also provide a lot of instructions in the comments. 
 
-1. download [example_myrobot.zip](https://github.com/keroroxzz/habitat_ros/releases/download/release/example_myrobot.zip) and decompress it to your {catkin_ws}/src/
+1. download robot_example.zip in the [latest release](https://github.com/keroroxzz/habitat_ros/releases) and decompress it to your {catkin_ws}/src/
 2. catkin_make your workspace
-3. roslaunch myrobot myrobot.launch
+3. Run  the following comamnd to use the example robot in a isolated package.
+    
+    roslaunch robot_example robot_example.launch
 
 You may also refer to the [releases](https://github.com/keroroxzz/habitat_ros/releases/tag/release).
 
