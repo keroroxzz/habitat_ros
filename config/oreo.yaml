@@ -12,7 +12,7 @@ oreo: # robot_name
   frame: "/base_link" # tf frame of this node
 
   # initial pose in the world frame
-  translation: [0.0, 0.0, 0.5]
+  position: [0.0, 0.0, 0.5]
   rotation: [0.0, 0.0, 0.0, 1.0]
 
   # dynamic properties
