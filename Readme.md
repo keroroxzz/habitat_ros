@@ -109,7 +109,9 @@ You may also refer to the [releases](https://github.com/keroroxzz/habitat_ros/re
 # License
 
 The original default robot "OREO" belongs to Advanced Control Lab (ACL), National Taiwan University.
+
 Please create your robot and prevent using OREO in your publishment, thanks!
+
 Contact the lab for more information about OREO: https://www.ntueeacl.com/
 
 If you have any problem with this package, please open a new issue on Github or find me through my email.
